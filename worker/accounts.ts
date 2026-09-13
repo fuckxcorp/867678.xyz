@@ -48,7 +48,7 @@ async function getAccount(env: Env, userId: string) {
   )
     .bind(userId)
     .first<UserRow & { recovery_code_count: number }>();
-  if (!row) throw new HttpError(404, "USER_NOT_FOUND", "用户不存在。");
+  if (!row) throw new HttpError(404, "USER_NOT_FOUND", "User not found.");
   return accountFromRow(row);
 }
 
@@ -59,25 +59,31 @@ export async function loginOrRegister(
   code?: string,
 ) {
   const identifier = identifierValue.trim().replace(/^@/, "").toLowerCase();
-  if (!identifier) throw new HttpError(400, "EMAIL_REQUIRED", "请输入邮箱。");
-  if (!password) throw new HttpError(400, "PASSWORD_REQUIRED", "请输入密码。");
+  if (!identifier)
+    throw new HttpError(400, "EMAIL_REQUIRED", "Email is required.");
+  if (!password)
+    throw new HttpError(400, "PASSWORD_REQUIRED", "Password is required.");
 
   let user = await findUserByIdentifier(env, identifier);
   if (user) {
     if (!(await verifyPassword(password, user))) {
-      throw new HttpError(401, "INVALID_CREDENTIALS", "邮箱或密码错误。");
+      throw new HttpError(
+        401,
+        "INVALID_CREDENTIALS",
+        "Invalid email or password.",
+      );
     }
     if (user.two_factor_enabled) {
       if (!code?.trim()) {
         throw new HttpError(
           428,
           "TWO_FACTOR_REQUIRED",
-          "请输入验证器 App 的动态验证码。",
+          "Enter the authenticator code.",
         );
       }
       const secret = await decryptSecret(user.totp_secret ?? "", env);
       if (!(await verifyTotp(secret, code.trim()))) {
-        throw new HttpError(401, "INVALID_TOTP", "动态验证码不正确。");
+        throw new HttpError(401, "INVALID_TOTP", "Invalid authenticator code.");
       }
     }
     return { userId: user.id, account: await getAccount(env, user.id) };
@@ -109,12 +115,18 @@ export async function loginOrRegister(
       )
       .run();
   } catch {
-    throw new HttpError(409, "IDENTIFIER_EXISTS", "邮箱或用户名已经被使用。");
+    throw new HttpError(
+      409,
+      "IDENTIFIER_EXISTS",
+      "Email or username is already in use.",
+    );
   }
   user = await env.DB.prepare("SELECT * FROM users WHERE id = ?")
     .bind(id)
     .first<UserRow>();
-  if (!user) throw new HttpError(500, "USER_CREATE_FAILED", "注册失败。");
+  if (!user) {
+    throw new HttpError(500, "USER_CREATE_FAILED", "Failed to create account.");
+  }
   return { userId: user.id, account: await getAccount(env, user.id) };
 }
 
@@ -136,7 +148,7 @@ export async function updateProfile(
      WHERE id = ?`,
   )
     .bind(
-      input.name?.trim() || "用户",
+      input.name?.trim() || "User",
       input.bio?.trim() ?? "",
       input.region?.trim() ?? "",
       input.gender?.trim() ?? "",
@@ -157,13 +169,18 @@ export async function changeEmail(
   const user = await env.DB.prepare("SELECT * FROM users WHERE id = ?")
     .bind(userId)
     .first<UserRow>();
-  if (!user) throw new HttpError(401, "UNAUTHORIZED", "请先登录。");
+  if (!user)
+    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
   if (!(await verifyPassword(password, user))) {
-    throw new HttpError(403, "INVALID_PASSWORD", "当前密码不正确。");
+    throw new HttpError(
+      403,
+      "INVALID_PASSWORD",
+      "Current password is incorrect.",
+    );
   }
   const email = emailValue.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    throw new HttpError(400, "INVALID_EMAIL", "邮箱格式不正确。");
+    throw new HttpError(400, "INVALID_EMAIL", "Invalid email address.");
   }
   try {
     await env.DB.prepare(
@@ -172,7 +189,7 @@ export async function changeEmail(
       .bind(email, new Date().toISOString(), userId)
       .run();
   } catch {
-    throw new HttpError(409, "EMAIL_EXISTS", "该邮箱已经被使用。");
+    throw new HttpError(409, "EMAIL_EXISTS", "Email is already in use.");
   }
   return getAccount(env, userId);
 }
@@ -184,14 +201,23 @@ export async function changePassword(
   next: string,
 ): Promise<void> {
   if ([...next].length < 8) {
-    throw new HttpError(400, "PASSWORD_TOO_SHORT", "新密码至少 8 位。");
+    throw new HttpError(
+      400,
+      "PASSWORD_TOO_SHORT",
+      "New password must be at least 8 characters.",
+    );
   }
   const user = await env.DB.prepare("SELECT * FROM users WHERE id = ?")
     .bind(userId)
     .first<UserRow>();
-  if (!user) throw new HttpError(401, "UNAUTHORIZED", "请先登录。");
+  if (!user)
+    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
   if (!(await verifyPassword(current, user))) {
-    throw new HttpError(403, "INVALID_PASSWORD", "当前密码不正确。");
+    throw new HttpError(
+      403,
+      "INVALID_PASSWORD",
+      "Current password is incorrect.",
+    );
   }
   const passwordValue = await createPasswordHash(next);
   await env.DB.prepare(
@@ -225,11 +251,15 @@ export async function confirmTwoFactor(env: Env, userId: string, code: string) {
     .bind(userId)
     .first<UserRow>();
   if (!user?.totp_secret) {
-    throw new HttpError(400, "TOTP_NOT_STARTED", "请先开始绑定验证器。");
+    throw new HttpError(
+      400,
+      "TOTP_NOT_STARTED",
+      "Start authenticator setup first.",
+    );
   }
   const secret = await decryptSecret(user.totp_secret, env);
   if (!(await verifyTotp(secret, code.trim()))) {
-    throw new HttpError(400, "INVALID_TOTP", "动态验证码不正确。");
+    throw new HttpError(400, "INVALID_TOTP", "Invalid authenticator code.");
   }
   await env.DB.prepare(
     `UPDATE users
@@ -248,7 +278,11 @@ export async function replaceRecoveryCodes(env: Env, userId: string) {
     .bind(userId)
     .first<Pick<UserRow, "two_factor_enabled">>();
   if (!user?.two_factor_enabled) {
-    throw new HttpError(400, "TOTP_REQUIRED", "请先开启两步验证。");
+    throw new HttpError(
+      400,
+      "TOTP_REQUIRED",
+      "Enable two-factor authentication first.",
+    );
   }
   const codes = Array.from({ length: 8 }, randomRecoveryCode);
   const now = new Date().toISOString();

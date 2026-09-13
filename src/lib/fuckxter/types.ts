@@ -74,3 +74,24 @@ export interface Comment {
   text: string;
   createdAt: string;
 }
+
+export interface UserProfile {
+  id: string;
+  handle: string;
+  name: string;
+  verified?: boolean;
+  bio: string;
+  region: string;
+  gender: string;
+  birthday: string;
+  createdAt: string;
+  avatarUrl: string | null;
+  stats: {
+    posts: number;
+    followers: number;
+    following: number;
+  };
+  viewer: {
+    following: boolean;
+  };
+}

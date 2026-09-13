@@ -13,6 +13,8 @@ import type { Env } from "./platform";
 import {
   createComment,
   createPost,
+  deleteComment,
+  deletePost,
   getComments,
   getPostById,
   getPostByPath,
@@ -23,6 +25,7 @@ import {
   setLike,
   setRepost,
   setSaved,
+  updatePost,
 } from "./posts";
 import { testStorageConnection } from "./s3";
 import {
@@ -34,6 +37,7 @@ import {
   requireUser,
 } from "./security";
 import { getStorageConfig, saveStorageConfig } from "./storage";
+import { getUserProfile, setAvatar, setFollow } from "./users";
 
 function withCookie(response: Response, cookie: string): Response {
   response.headers.append("Set-Cookie", cookie);
@@ -44,7 +48,7 @@ function segment(values: string[], index: number): string {
   try {
     return decodeURIComponent(values[index] ?? "");
   } catch {
-    throw new HttpError(400, "INVALID_PATH", "请求路径无效。");
+    throw new HttpError(400, "INVALID_PATH", "Invalid request path.");
   }
 }
 
@@ -53,7 +57,7 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
   const method = request.method;
 
   if (parts[0] !== "api") {
-    throw new HttpError(404, "NOT_FOUND", "接口不存在。");
+    throw new HttpError(404, "NOT_FOUND", "Endpoint not found.");
   }
 
   if (parts[1] === "health" && parts.length === 2 && method === "GET") {
@@ -197,6 +201,20 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
       return json({ posts: await getSavedPosts(env, user.id) }, request, env);
     }
 
+    if (
+      parts[2] === "avatar" &&
+      parts.length === 3 &&
+      (method === "PUT" || method === "DELETE")
+    ) {
+      const body =
+        method === "PUT"
+          ? await readJson<{ mediaId?: string }>(request)
+          : { mediaId: "" };
+      await setAvatar(env, user.id, body.mediaId?.trim() || null);
+      const updated = await requireUser(request, env);
+      return json({ account: accountFromRow(updated) }, request, env);
+    }
+
     if (parts[2] === "2fa" && parts[3] === "setup" && method === "POST") {
       return json(await beginTwoFactor(env, user.id), request, env);
     }
@@ -282,8 +300,23 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
 
       if (method === "GET") {
         const post = await getPostById(env, user?.id ?? null, postId);
-        if (!post) throw new HttpError(404, "POST_NOT_FOUND", "帖子不存在。");
+        if (!post)
+          throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
         return json(post, request, env);
+      }
+
+      if (method === "PATCH" || method === "DELETE") {
+        const actor = await requireUser(request, env);
+        if (method === "DELETE") {
+          await deletePost(env, actor.id, postId);
+          return json({ ok: true }, request, env);
+        }
+        const body = await readJson<{ text?: string }>(request);
+        return json(
+          await updatePost(env, actor.id, postId, body.text ?? ""),
+          request,
+          env,
+        );
       }
     }
 
@@ -336,6 +369,12 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
       }
     }
 
+    if (parts.length === 5 && parts[3] === "comments" && method === "DELETE") {
+      const user = await requireUser(request, env);
+      await deleteComment(env, user.id, segment(parts, 2), segment(parts, 4));
+      return json({ ok: true }, request, env);
+    }
+
     if (parts.length === 4 && method === "GET") {
       const user = await getOptionalUser(request, env);
       const post = await getPostByPath(
@@ -344,9 +383,34 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
         segment(parts, 2),
         segment(parts, 3),
       );
-      if (!post) throw new HttpError(404, "POST_NOT_FOUND", "帖子不存在。");
+      if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
       return json(post, request, env);
     }
+  }
+
+  if (parts[1] === "users" && parts.length === 3 && method === "GET") {
+    const user = await getOptionalUser(request, env);
+    const profile = await getUserProfile(
+      env,
+      user?.id ?? null,
+      segment(parts, 2),
+    );
+    if (!profile) throw new HttpError(404, "USER_NOT_FOUND", "User not found.");
+    return json({ user: profile }, request, env);
+  }
+
+  if (
+    parts[1] === "users" &&
+    parts[3] === "follow" &&
+    parts.length === 4 &&
+    (method === "PUT" || method === "DELETE")
+  ) {
+    const user = await requireUser(request, env);
+    return json(
+      await setFollow(env, user.id, segment(parts, 2), method === "PUT"),
+      request,
+      env,
+    );
   }
 
   if (parts[1] === "users" && parts[3] === "posts" && method === "GET") {
@@ -360,7 +424,7 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
     );
   }
 
-  throw new HttpError(404, "NOT_FOUND", "接口不存在。");
+  throw new HttpError(404, "NOT_FOUND", "Endpoint not found.");
 }
 
 export default {

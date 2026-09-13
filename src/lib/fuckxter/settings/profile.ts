@@ -1,5 +1,7 @@
-import { updateProfile } from "../auth";
+import { uploadMedia, updateAvatar } from "../api";
+import { getAccount, hydrateSession, updateProfile } from "../auth";
 import { avatarGradient } from "../dom";
+import { apiEndpoint } from "../http";
 import { setStatus, type SettingsContext } from "./shared";
 
 const GENDER_PRESETS = ["男", "女", "跨性别男", "跨性别女"];
@@ -16,6 +18,16 @@ export function mountProfileSettings(
   const bioCount = root.querySelector<HTMLElement>("[data-role=bio-count]")!;
   const profileStatus =
     profileForm.querySelector<HTMLElement>(".fk-form-status")!;
+  const avatar = root.querySelector<HTMLElement>("[data-role=profile-avatar]")!;
+  const avatarUpload = root.querySelector<HTMLButtonElement>(
+    "[data-role=avatar-upload]",
+  )!;
+  const avatarRemove = root.querySelector<HTMLButtonElement>(
+    "[data-role=avatar-remove]",
+  )!;
+  const avatarInput = root.querySelector<HTMLInputElement>(
+    "[data-role=avatar-input]",
+  )!;
   const genderSelect =
     profileForm.querySelector<HTMLSelectElement>("[name=gender]")!;
   const genderCustomInput = profileForm.querySelector<HTMLInputElement>(
@@ -47,12 +59,69 @@ export function mountProfileSettings(
     profileForm.querySelector<HTMLInputElement>("[name=birthday]")!.value =
       account.profile.birthday;
     setStatus(profileStatus, "");
-    const avatar = root.querySelector<HTMLElement>(
-      "[data-role=profile-avatar]",
-    )!;
     avatar.setAttribute("style", avatarGradient(account.profile.handle));
     avatar.textContent = [...account.profile.name][0] ?? "?";
+    avatarRemove.hidden = !account.avatarUrl;
+    if (account.avatarUrl) {
+      const image = document.createElement("img");
+      image.className = "fk-profile-avatar-image";
+      image.src = account.avatarUrl.startsWith("/")
+        ? apiEndpoint(account.avatarUrl)
+        : account.avatarUrl;
+      image.alt = account.profile.name;
+      avatar.replaceChildren(image);
+    }
   };
+
+  const refreshAccount = async () => {
+    await hydrateSession(true);
+    const account = getAccount();
+    if (!account) return;
+    context.setAccount(account);
+    fillProfileForm();
+  };
+
+  avatarUpload.addEventListener("click", () => avatarInput.click());
+  avatarInput.addEventListener("change", async () => {
+    const file = avatarInput.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setStatus(profileStatus, "Image cannot exceed 10 MB");
+      avatarInput.value = "";
+      return;
+    }
+    avatarUpload.disabled = true;
+    setStatus(profileStatus, "Uploading avatar...");
+    try {
+      const media = await uploadMedia(file);
+      await updateAvatar(media.id);
+      await refreshAccount();
+      setStatus(profileStatus, "Avatar updated");
+    } catch (error) {
+      setStatus(
+        profileStatus,
+        error instanceof Error ? error.message : "Avatar upload failed",
+      );
+    } finally {
+      avatarUpload.disabled = false;
+      avatarInput.value = "";
+    }
+  });
+  avatarRemove.addEventListener("click", async () => {
+    avatarRemove.disabled = true;
+    try {
+      await updateAvatar(null);
+      await refreshAccount();
+      setStatus(profileStatus, "Avatar removed");
+    } catch (error) {
+      setStatus(
+        profileStatus,
+        error instanceof Error ? error.message : "Failed to remove avatar",
+      );
+    } finally {
+      avatarRemove.disabled = false;
+    }
+  });
 
   genderSelect.addEventListener("change", () => {
     genderCustomInput.disabled = genderSelect.value !== "自定义";

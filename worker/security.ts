@@ -167,7 +167,8 @@ export async function requireUser(
   env: Env,
 ): Promise<SessionUserRow> {
   const user = await getOptionalUser(request, env);
-  if (!user) throw new HttpError(401, "UNAUTHORIZED", "请先登录。");
+  if (!user)
+    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
   return user;
 }
 
@@ -184,6 +185,9 @@ export function accountFromRow(
       gender: row.gender,
       birthday: row.birthday,
     },
+    avatarUrl: row.avatar_media_id
+      ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
+      : null,
     twoFactorEnabled: Boolean(row.two_factor_enabled),
     recoveryCodeCount: Number(row.recovery_code_count ?? 0),
     createdAt: row.created_at,
@@ -198,7 +202,7 @@ export async function recoverableCodeHash(
     throw new HttpError(
       500,
       "FUCKXTER_SECRET_REQUIRED",
-      "服务端未配置 FUCKXTER_SECRET。",
+      "FUCKXTER_SECRET is not configured.",
     );
   }
   return sha256(`${env.FUCKXTER_SECRET}:${code.toUpperCase()}`);
@@ -209,7 +213,7 @@ async function encryptionKey(env: Env): Promise<CryptoKey> {
     throw new HttpError(
       500,
       "FUCKXTER_SECRET_REQUIRED",
-      "服务端未配置 FUCKXTER_SECRET。",
+      "FUCKXTER_SECRET is not configured.",
     );
   }
   const digest = await crypto.subtle.digest(
@@ -242,7 +246,7 @@ export async function decryptSecret(value: string, env: Env): Promise<string> {
     throw new HttpError(
       500,
       "FUCKXTER_SECRET_REQUIRED",
-      "缺少 FUCKXTER_SECRET。",
+      "FUCKXTER_SECRET is not configured.",
     );
   }
   const [, , ivValue, encryptedValue] = value.split(":");

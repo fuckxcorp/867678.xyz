@@ -57,7 +57,7 @@ export async function readJson<T>(request: Request): Promise<T> {
   try {
     return (await request.json()) as T;
   } catch {
-    throw new HttpError(400, "INVALID_JSON", "请求内容不是有效 JSON。");
+    throw new HttpError(400, "INVALID_JSON", "Request body is not valid JSON.");
   }
 }
 
@@ -85,7 +85,7 @@ export function errorResponse(
     {
       error: {
         code: "INTERNAL_ERROR",
-        message: "服务器内部错误。",
+        message: "Internal server error.",
       },
     },
     request,

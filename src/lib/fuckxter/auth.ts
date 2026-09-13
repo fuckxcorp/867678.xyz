@@ -11,6 +11,7 @@ export interface Account {
     gender: string;
     birthday: string;
   };
+  avatarUrl: string | null;
   twoFactorEnabled: boolean;
   recoveryCodeCount: number;
   createdAt: string;
@@ -37,6 +38,7 @@ let sessionPromise: Promise<Account | null> | null = null;
 function normalizeAccount(value: Account): Account {
   return {
     ...value,
+    avatarUrl: value.avatarUrl ?? null,
     recoveryCodeCount: value.recoveryCodeCount ?? 0,
   };
 }

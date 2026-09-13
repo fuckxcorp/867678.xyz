@@ -55,7 +55,7 @@ function decodeCursor(cursor: string): [string, string] {
     }
     return [value[0], value[1]];
   } catch {
-    throw new HttpError(400, "INVALID_CURSOR", "分页游标无效。");
+    throw new HttpError(400, "INVALID_CURSOR", "Invalid pagination cursor.");
   }
 }
 
@@ -193,9 +193,14 @@ export async function createPost(
   mediaId?: string,
 ) {
   const cleanText = text.trim();
-  if (!cleanText) throw new HttpError(400, "EMPTY_POST", "帖子内容不能为空。");
+  if (!cleanText)
+    throw new HttpError(400, "EMPTY_POST", "Post text is required.");
   if ([...cleanText].length > 500) {
-    throw new HttpError(400, "POST_TOO_LONG", "帖子不能超过 500 字。");
+    throw new HttpError(
+      400,
+      "POST_TOO_LONG",
+      "Post cannot exceed 500 characters.",
+    );
   }
   const id = randomId();
   const slug = `${Date.now().toString(36)}-${id.slice(0, 8)}`;
@@ -215,7 +220,11 @@ export async function createPost(
         byte_size: number;
       }>();
     if (!media) {
-      throw new HttpError(400, "INVALID_MEDIA", "媒体不存在或不属于当前用户。");
+      throw new HttpError(
+        400,
+        "INVALID_MEDIA",
+        "Media not found or does not belong to this user.",
+      );
     }
     mediaJson = JSON.stringify({
       id: media.id,
@@ -235,6 +244,58 @@ export async function createPost(
   return getPostById(env, authorId, id);
 }
 
+export async function updatePost(
+  env: Env,
+  userId: string,
+  postId: string,
+  text: string,
+) {
+  const cleanText = text.trim();
+  if (!cleanText)
+    throw new HttpError(400, "EMPTY_POST", "Post text is required.");
+  if ([...cleanText].length > 500) {
+    throw new HttpError(
+      400,
+      "POST_TOO_LONG",
+      "Post cannot exceed 500 characters.",
+    );
+  }
+  const post = await env.DB.prepare(
+    "SELECT author_id FROM posts WHERE id = ? AND deleted_at IS NULL",
+  )
+    .bind(postId)
+    .first<{ author_id: string }>();
+  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
+  if (post.author_id !== userId) {
+    throw new HttpError(403, "FORBIDDEN", "You cannot edit this post.");
+  }
+  await env.DB.prepare("UPDATE posts SET text = ?, updated_at = ? WHERE id = ?")
+    .bind(cleanText, new Date().toISOString(), postId)
+    .run();
+  return getPostById(env, userId, postId);
+}
+
+export async function deletePost(
+  env: Env,
+  userId: string,
+  postId: string,
+): Promise<void> {
+  const post = await env.DB.prepare(
+    "SELECT author_id FROM posts WHERE id = ? AND deleted_at IS NULL",
+  )
+    .bind(postId)
+    .first<{ author_id: string }>();
+  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
+  if (post.author_id !== userId) {
+    throw new HttpError(403, "FORBIDDEN", "You cannot delete this post.");
+  }
+  await env.DB.prepare(
+    "UPDATE posts SET deleted_at = ?, updated_at = ? WHERE id = ?",
+  )
+    .bind(new Date().toISOString(), new Date().toISOString(), postId)
+    .run();
+}
+
 export async function setLike(
   env: Env,
   userId: string,
@@ -246,7 +307,7 @@ export async function setLike(
   )
     .bind(postId)
     .first<{ id: string }>();
-  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "帖子不存在。");
+  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
   if (active) {
     await env.DB.prepare(
       `INSERT INTO likes (user_id, post_id, created_at)
@@ -279,7 +340,7 @@ export async function setRepost(
   )
     .bind(postId)
     .first<{ id: string }>();
-  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "帖子不存在。");
+  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
   if (active) {
     await env.DB.prepare(
       `INSERT INTO reposts (user_id, post_id, created_at)
@@ -331,7 +392,7 @@ export async function setSaved(
   )
     .bind(postId)
     .first<{ id: string }>();
-  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "帖子不存在。");
+  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
   if (active) {
     await env.DB.prepare(
       `INSERT INTO bookmarks (user_id, post_id, created_at)
@@ -425,17 +486,21 @@ export async function createComment(
 ) {
   const cleanText = text.trim();
   if (!cleanText) {
-    throw new HttpError(400, "EMPTY_COMMENT", "评论内容不能为空。");
+    throw new HttpError(400, "EMPTY_COMMENT", "Comment text is required.");
   }
   if ([...cleanText].length > 500) {
-    throw new HttpError(400, "COMMENT_TOO_LONG", "评论不能超过 500 字。");
+    throw new HttpError(
+      400,
+      "COMMENT_TOO_LONG",
+      "Comment cannot exceed 500 characters.",
+    );
   }
   const post = await env.DB.prepare(
     "SELECT id FROM posts WHERE id = ? AND deleted_at IS NULL",
   )
     .bind(postId)
     .first<{ id: string }>();
-  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "帖子不存在。");
+  if (!post) throw new HttpError(404, "POST_NOT_FOUND", "Post not found.");
 
   const id = randomId();
   const now = new Date().toISOString();
@@ -456,7 +521,8 @@ export async function createComment(
       handle: string;
       verified: number;
     }>();
-  if (!user) throw new HttpError(401, "UNAUTHORIZED", "请先登录。");
+  if (!user)
+    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
 
   return {
     id,
@@ -469,4 +535,27 @@ export async function createComment(
     text: cleanText,
     createdAt: now,
   };
+}
+
+export async function deleteComment(
+  env: Env,
+  userId: string,
+  postId: string,
+  commentId: string,
+): Promise<void> {
+  const row = await env.DB.prepare(
+    `SELECT c.author_id, p.author_id AS post_author_id
+     FROM comments c
+     JOIN posts p ON p.id = c.post_id
+     WHERE c.id = ? AND c.post_id = ? AND c.deleted_at IS NULL`,
+  )
+    .bind(commentId, postId)
+    .first<{ author_id: string; post_author_id: string }>();
+  if (!row) throw new HttpError(404, "COMMENT_NOT_FOUND", "Comment not found.");
+  if (row.author_id !== userId && row.post_author_id !== userId) {
+    throw new HttpError(403, "FORBIDDEN", "You cannot delete this comment.");
+  }
+  await env.DB.prepare("UPDATE comments SET deleted_at = ? WHERE id = ?")
+    .bind(new Date().toISOString(), commentId)
+    .run();
 }

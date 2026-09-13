@@ -8,6 +8,7 @@ import type {
   PostMedia,
   RepostResult,
   SearchResult,
+  UserProfile,
 } from "./types";
 
 const query = (values: Record<string, string | null>): string => {
@@ -123,4 +124,27 @@ export async function createComment(
     },
   );
   return response.comment;
+}
+
+export async function getUserProfile(handle: string): Promise<UserProfile> {
+  const response = await apiRequest<{ user: UserProfile }>(
+    `/api/users/${encodeURIComponent(handle)}`,
+  );
+  return response.user;
+}
+
+export function setFollow(
+  handle: string,
+  following: boolean,
+): Promise<{ handle: string; following: boolean; followers: number }> {
+  return apiRequest(`/api/users/${encodeURIComponent(handle)}/follow`, {
+    method: following ? "PUT" : "DELETE",
+  });
+}
+
+export async function updateAvatar(mediaId: string | null): Promise<void> {
+  await apiRequest("/api/me/avatar", {
+    method: mediaId ? "PUT" : "DELETE",
+    body: mediaId ? JSON.stringify({ mediaId }) : undefined,
+  });
 }

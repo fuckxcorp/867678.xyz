@@ -81,11 +81,11 @@ function mediaJson(row: MediaRow) {
 export async function uploadMedia(request: Request, env: Env, userId: string) {
   const contentLength = Number(request.headers.get("Content-Length") ?? "0");
   if (contentLength > MAX_IMAGE_BYTES) {
-    throw new HttpError(413, "MEDIA_TOO_LARGE", "图片不能超过 10 MB。");
+    throw new HttpError(413, "MEDIA_TOO_LARGE", "Image cannot exceed 10 MB.");
   }
   const bytes = await request.arrayBuffer();
   if (bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new HttpError(413, "MEDIA_TOO_LARGE", "图片不能超过 10 MB。");
+    throw new HttpError(413, "MEDIA_TOO_LARGE", "Image cannot exceed 10 MB.");
   }
   const header = new Uint8Array(bytes.slice(0, 64));
   const contentType = detectImageType(header);
@@ -93,13 +93,17 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
     throw new HttpError(
       415,
       "UNSUPPORTED_MEDIA",
-      "仅支持 JPEG、PNG、GIF、WebP 和 AVIF 图片。",
+      "Only JPEG, PNG, GIF, WebP, and AVIF images are supported.",
     );
   }
 
   const config = await getStorageConfig(env, userId);
   if (!config) {
-    throw new HttpError(400, "STORAGE_REQUIRED", "请先配置 S3 兼容存储。");
+    throw new HttpError(
+      400,
+      "STORAGE_REQUIRED",
+      "Configure S3-compatible storage first.",
+    );
   }
 
   const objectKey = `users/${userId}/media/${randomId()}.${extensionFor(contentType)}`;
@@ -114,7 +118,7 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
     throw new HttpError(
       502,
       "MEDIA_UPLOAD_FAILED",
-      `媒体上传失败（S3 ${response.status}）。`,
+      `Media upload failed (S3 ${response.status}).`,
     );
   }
 
@@ -166,7 +170,7 @@ async function getMediaRow(env: Env, id: string): Promise<MediaRow> {
   )
     .bind(id)
     .first<MediaRow>();
-  if (!row) throw new HttpError(404, "MEDIA_NOT_FOUND", "媒体不存在。");
+  if (!row) throw new HttpError(404, "MEDIA_NOT_FOUND", "Media not found.");
   return row;
 }
 
@@ -193,23 +197,35 @@ export async function getMedia(
 
   const config = await getStorageConfig(env, row.owner_id);
   if (!config) {
-    throw new HttpError(502, "STORAGE_UNAVAILABLE", "媒体源存储当前不可用。");
+    throw new HttpError(
+      502,
+      "STORAGE_UNAVAILABLE",
+      "The media source storage is unavailable.",
+    );
   }
   const { response } = await signedS3Request(config, "GET", row.object_key);
   if (!response.ok) {
     throw new HttpError(
       502,
       "MEDIA_FETCH_FAILED",
-      `媒体读取失败（S3 ${response.status}）。`,
+      `Media fetch failed (S3 ${response.status}).`,
     );
   }
   const bytes = await response.arrayBuffer();
   if (bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new HttpError(502, "MEDIA_TOO_LARGE", "源媒体超过大小限制。");
+    throw new HttpError(
+      502,
+      "MEDIA_TOO_LARGE",
+      "Source media exceeds the size limit.",
+    );
   }
   const detected = detectImageType(new Uint8Array(bytes.slice(0, 64)));
   if (!detected || detected !== row.content_type) {
-    throw new HttpError(502, "MEDIA_CHANGED", "源媒体内容已发生变化。");
+    throw new HttpError(
+      502,
+      "MEDIA_CHANGED",
+      "Source media content has changed.",
+    );
   }
   await env.MEDIA_CACHE.put(cacheKey, bytes, {
     httpMetadata: { contentType: detected },

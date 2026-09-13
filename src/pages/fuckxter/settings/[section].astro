@@ -111,11 +111,24 @@ const sectionTitles: Record<SettingsSection, string> = {
             <button
               type="button"
               class="fk-ghost-btn"
-              disabled
-              title="图片上传接入后开放"
+              data-role="avatar-upload"
             >
               更换头像
             </button>
+            <button
+              type="button"
+              class="fk-ghost-btn"
+              data-role="avatar-remove"
+              hidden
+            >
+              移除头像
+            </button>
+            <input
+              type="file"
+              data-role="avatar-input"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+              hidden
+            />
           </div>
           <form data-role="profile-form" novalidate>
             <label class="fk-field">

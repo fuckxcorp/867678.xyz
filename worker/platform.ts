@@ -64,6 +64,7 @@ export interface UserRow {
   region: string;
   gender: string;
   birthday: string;
+  avatar_media_id: string | null;
   totp_secret: string | null;
   two_factor_enabled: number;
   created_at: string;

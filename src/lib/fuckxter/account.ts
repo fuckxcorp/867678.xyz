@@ -7,7 +7,7 @@ import {
   type Account,
 } from "./auth";
 import { avatarGradient } from "./dom";
-import { ApiError } from "./http";
+import { ApiError, apiEndpoint } from "./http";
 import { userPath } from "./urls";
 
 interface AccountControlsOptions {
@@ -100,6 +100,17 @@ export function mountAccountControls(
       accountAvatar.textContent = initial;
       menuAvatar.setAttribute("style", avatarGradient(account.profile.handle));
       menuAvatar.textContent = initial;
+      if (account.avatarUrl) {
+        for (const element of [accountAvatar, menuAvatar]) {
+          const image = document.createElement("img");
+          image.className = "fk-account-image";
+          image.src = account.avatarUrl!.startsWith("/")
+            ? apiEndpoint(account.avatarUrl!)
+            : account.avatarUrl!;
+          image.alt = "";
+          element.replaceChildren(image);
+        }
+      }
       menuName.textContent = account.profile.name;
       menuHandle.textContent = `@${account.profile.handle}`;
       authItems.hidden = true;

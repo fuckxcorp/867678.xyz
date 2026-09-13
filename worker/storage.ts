@@ -41,10 +41,11 @@ export async function saveStorageConfig(
     throw new HttpError(
       400,
       "INVALID_ENDPOINT",
-      "Endpoint 需以 http(s):// 开头。",
+      "Endpoint must start with http(s)://.",
     );
   }
-  if (!bucket) throw new HttpError(400, "BUCKET_REQUIRED", "Bucket 不能为空。");
+  if (!bucket)
+    throw new HttpError(400, "BUCKET_REQUIRED", "Bucket is required.");
 
   const existing = await env.DB.prepare(
     "SELECT secret_ciphertext FROM s3_configs WHERE user_id = ?",
@@ -56,7 +57,11 @@ export async function saveStorageConfig(
     ? await encryptSecret(suppliedSecret, env)
     : existing?.secret_ciphertext;
   if (!secretCiphertext) {
-    throw new HttpError(400, "SECRET_REQUIRED", "Secret Access Key 不能为空。");
+    throw new HttpError(
+      400,
+      "SECRET_REQUIRED",
+      "Secret Access Key is required.",
+    );
   }
 
   const now = new Date().toISOString();

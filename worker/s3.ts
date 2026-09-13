@@ -46,11 +46,11 @@ export function validateStorageInput(input: S3Config): void {
     throw new HttpError(
       400,
       "INVALID_ENDPOINT",
-      "Endpoint 需以 http(s):// 开头。",
+      "Endpoint must start with http(s)://.",
     );
   }
   if (!input.bucket?.trim()) {
-    throw new HttpError(400, "BUCKET_REQUIRED", "Bucket 不能为空。");
+    throw new HttpError(400, "BUCKET_REQUIRED", "Bucket is required.");
   }
 }
 
@@ -71,7 +71,7 @@ export async function signedS3Request(
     throw new HttpError(
       400,
       "STORAGE_CREDENTIALS_REQUIRED",
-      "Access Key ID 和 Secret Access Key 不能为空。",
+      "Access Key ID and Secret Access Key are required.",
     );
   }
 
@@ -152,18 +152,18 @@ export async function signedS3Request(
 export async function testStorageConnection(input: S3Config): Promise<string> {
   const { response, endpoint } = await signedS3Request(input, "HEAD", "");
   if (response.ok) {
-    return `连接成功：${input.bucket} @ ${endpoint.host}`;
+    return `Connection succeeded: ${input.bucket} @ ${endpoint.host}`;
   }
   if (response.status === 401 || response.status === 403) {
     throw new HttpError(
       400,
       "S3_AUTH_FAILED",
-      "连接失败：Access Key 或 Secret Key 不正确。",
+      "Connection failed: the access key or secret key is invalid.",
     );
   }
   throw new HttpError(
     502,
     "S3_CONNECTION_FAILED",
-    `连接失败：S3 返回 ${response.status}。`,
+    `Connection failed: S3 returned ${response.status}.`,
   );
 }

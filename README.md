@@ -44,12 +44,23 @@ Run `pnpm fresh` to run this script and refresh the CDN cache, so that the CDN g
 
 ## FuckXter API
 
-FuckXter uses a separate Cloudflare Worker API. Configure the Worker origin
-before building the frontend:
+FuckXter uses a separate Cloudflare Worker API. Configure the API origin in
+Cloudflare Pages, not in the GitHub Actions workflow:
 
-```dotenv
-PUBLIC_FUCKXTER_API_URL=https://api.867678.xyz
-```
+1. Open the Cloudflare Dashboard.
+2. Go to Workers & Pages.
+3. Select the Pages project `ws-867678`.
+4. Open Settings, then Variables and Secrets.
+5. Add `PUBLIC_FUCKXTER_API_URL` for Production and Preview:
+
+   ```dotenv
+   PUBLIC_FUCKXTER_API_URL=https://api.867678.xyz
+   ```
+
+6. Save the variable and redeploy the Pages project.
+
+This is a build-time variable, so changing it requires another frontend
+deployment.
 
 The Worker must allow the frontend origin with credentials:
 
