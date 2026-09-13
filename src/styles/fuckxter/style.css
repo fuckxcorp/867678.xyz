@@ -260,13 +260,6 @@
   box-shadow: var(--shadow-trigger);
 }
 
-.fk-dialog-wide {
-  display: flex;
-  width: min(760px, 100%);
-  padding: 0;
-  overflow: hidden;
-}
-
 .fk-dialog-brand {
   display: flex;
   justify-content: center;
@@ -276,36 +269,6 @@
 .fk-dialog-logo {
   height: 30px;
   width: auto;
-}
-
-.fk-dialog-tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1.1rem;
-  border-bottom: 1px solid var(--color-border-soft);
-}
-
-.fk-dialog-tab {
-  flex: 1;
-  margin-bottom: -1px;
-  border: 0;
-  border-bottom: 2.5px solid transparent;
-  background: none;
-  cursor: pointer;
-  padding: 0.6rem 0.5rem;
-  color: var(--color-text-muted);
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: color 150ms ease;
-}
-
-.fk-dialog-tab:hover {
-  color: var(--color-text-strong);
-}
-
-.fk-dialog-tab.is-active {
-  border-bottom-color: var(--color-accent);
-  color: var(--color-accent);
 }
 
 .fk-dialog-close {
@@ -403,6 +366,10 @@
 .fk-field {
   display: block;
   margin-bottom: 0.85rem;
+}
+
+.fk-field[hidden] {
+  display: none;
 }
 
 .fk-field-label {
@@ -836,13 +803,50 @@
 .fk-composer-foot {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 0.9rem;
   border-top: 1px solid var(--color-border-soft);
   padding-top: 0.6rem;
 }
 
+.fk-composer-attach {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.fk-composer-attach:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.fk-composer-attach:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.fk-media-status {
+  max-width: 14rem;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fk-media-status[hidden] {
+  display: none;
+}
+
 .fk-char-count {
+  margin-left: auto;
   font-size: 0.8rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
@@ -993,6 +997,13 @@
   max-height: 480px;
   font-size: 3rem;
   overflow: hidden;
+}
+
+.fk-media-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .fk-actions {
@@ -1228,10 +1239,6 @@
 
   .fk-dialog {
     padding: 1.1rem;
-  }
-
-  .fk-dialog-wide {
-    flex-direction: column;
   }
 
   .fk-settings-nav {

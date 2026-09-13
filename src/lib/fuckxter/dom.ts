@@ -1,4 +1,5 @@
 import type { Post } from "./types";
+import { apiEndpoint } from "./http";
 
 export const ICONS = {
   reply:
@@ -97,13 +98,13 @@ export function postMedia(post: Post): HTMLElement {
   const media = post.media;
   if (!media) return el("div");
   const node = el("div", "fk-media");
-  node.setAttribute(
-    "style",
-    `background-image: linear-gradient(135deg, ${media.gradient[0]}, ${media.gradient[1]})`,
-  );
-  node.setAttribute("role", "img");
-  node.setAttribute("aria-label", media.alt);
-  node.textContent = media.emoji;
+  const image = el("img", "fk-media-image");
+  image.src = media.url.startsWith("/") ? apiEndpoint(media.url) : media.url;
+  image.alt = media.alt;
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.referrerPolicy = "no-referrer";
+  node.append(image);
   return node;
 }
 

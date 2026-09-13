@@ -1,8 +1,6 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import Tables from "../../components/Tables.astro";
+import MarkdownPage from "../../components/MarkdownPage.astro";
 import { getCollection, render } from "astro:content";
-import "github-markdown-css/github-markdown.css";
 
 export async function getStaticPaths() {
   const projects = await getCollection("projects");
@@ -16,11 +14,6 @@ const { project } = Astro.props;
 const { Content, headings } = await render(project);
 ---
 
-<BaseLayout title={project.data.title}>
-  <div class:list={["page-layout", { "has-toc": headings.length > 1 }]}>
-    <article class="markdown-body">
-      <Content />
-    </article>
-    {headings.length > 1 && <Tables headings={headings} />}
-  </div>
-</BaseLayout>
+<MarkdownPage title={project.data.title} headings={headings}>
+  <Content />
+</MarkdownPage>

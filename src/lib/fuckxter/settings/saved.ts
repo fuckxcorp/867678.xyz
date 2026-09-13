@@ -1,6 +1,7 @@
 import { navigate } from "astro:transitions/client";
 import { getSavedPosts, toggleSave } from "../api";
 import { avatarGradient, el, relativeTime } from "../dom";
+import type { Post } from "../types";
 import { postPath } from "../urls";
 
 export function mountSavedSettings(root: HTMLElement): void {
@@ -8,10 +9,7 @@ export function mountSavedSettings(root: HTMLElement): void {
   const savedEmpty = root.querySelector<HTMLElement>(
     "[data-role=saved-empty]",
   )!;
-  const postsById = new Map<
-    string,
-    Awaited<ReturnType<typeof getSavedPosts>>[number]
-  >();
+  const postsById = new Map<string, Post>();
 
   const renderSavedList = async () => {
     try {

@@ -45,14 +45,10 @@ Run `pnpm fresh` to run this script and refresh the CDN cache, so that the CDN g
 ## FuckXter API
 
 FuckXter uses a separate Cloudflare Worker API. Configure the Worker origin
-before running the frontend:
-
-```bash
-cp .env.example .env
-```
+before building the frontend:
 
 ```dotenv
-PUBLIC_FUCKXTER_API_URL=https://api.example.com
+PUBLIC_FUCKXTER_API_URL=https://api.867678.xyz
 ```
 
 The Worker must allow the frontend origin with credentials:
@@ -62,9 +58,20 @@ The Worker must allow the frontend origin with credentials:
 - `Access-Control-Allow-Headers: Content-Type, X-Fuckxter-Client`
 - `Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS`
 
-Session cookies must use `Secure`, `HttpOnly`, and `SameSite=None`. Using an
-API subdomain such as `api.867678.xyz` is preferable to `workers.dev`, because
-browsers increasingly restrict cookies from a different site.
+Session cookies use `Secure`, `HttpOnly`, and `SameSite=Lax`. Run the Worker
+locally with:
+
+```bash
+pnpm api:migrate:local
+pnpm api:dev
+```
+
+Local development reads `FUCKXTER_SECRET` from `.dev.vars`.
+
+Using an API subdomain such as `api.867678.xyz` is preferable to `workers.dev`,
+because browsers increasingly restrict requests from a different site. If the
+API must stay on `workers.dev`, authentication needs to switch from cookies to
+bearer tokens.
 
 ## ⚖️ LICENSE
 

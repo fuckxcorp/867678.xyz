@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # Fuck lockfile
 pnpm-lock.yaml
+
+# Cloudflare
+.wrangler/
+.dev.vars

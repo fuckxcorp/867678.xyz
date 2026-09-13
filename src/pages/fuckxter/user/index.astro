@@ -251,7 +251,6 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
     // 优先取路径 /fuckxter/user/<handle>，兼容旧的 ?handle= 参数
     const handle = (
       parseUserPath(location.pathname) ??
-      new URLSearchParams(location.search).get("handle") ??
       account?.profile.handle ??
       ""
     )

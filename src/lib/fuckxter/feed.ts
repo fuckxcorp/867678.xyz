@@ -6,14 +6,16 @@ import {
   toggleLike,
   toggleRepost,
   toggleSave,
+  uploadMedia,
 } from "./api";
 import { getAccount, requestAuthentication, toFeedUser } from "./auth";
 import { avatarGradient, el, fmtCount, renderPost, statusRow } from "./dom";
 import { ApiError } from "./http";
-import type { FeedTab, Post, SearchResult } from "./types";
+import type { FeedTab, Post, PostMedia, SearchResult } from "./types";
 import { postPath, userPath } from "./urls";
 
 const MAX_CHARS = 500;
+const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
 
 const COLUMN_QUERIES: [string, number][] = [
   ["(min-width: 2200px)", 4],
@@ -39,6 +41,7 @@ interface FeedState {
 
 export interface FeedControls {
   syncUser: () => void;
+  reload: () => void;
   dispose: () => void;
 }
 
@@ -75,11 +78,22 @@ export function mountFeed(container: HTMLElement): FeedControls {
   const composerAuthHint = container.querySelector<HTMLElement>(
     "[data-role=composer-auth-hint]",
   )!;
+  const mediaInput = container.querySelector<HTMLInputElement>(
+    "[data-role=media-input]",
+  )!;
+  const attachMediaBtn = container.querySelector<HTMLButtonElement>(
+    "[data-role=attach-media]",
+  )!;
+  const mediaStatus = container.querySelector<HTMLElement>(
+    "[data-role=media-status]",
+  )!;
   const searchInput =
     container.querySelector<HTMLInputElement>(".fk-search-input")!;
   const composerAvatar = container.querySelector<HTMLElement>(
     ".fk-composer .fk-avatar",
   )!;
+  let selectedMedia: PostMedia | null = null;
+  let uploadingMedia = false;
 
   const syncComposerUser = () => {
     const account = getAccount();
@@ -90,6 +104,11 @@ export function mountFeed(container: HTMLElement): FeedControls {
     composerAuthHint.hidden = Boolean(account);
     composerBtn.textContent = account ? "发帖" : "注册后发帖";
     composerInput.placeholder = account ? "有什么新鲜事？" : "注册后才能发帖";
+    if (!account) {
+      selectedMedia = null;
+      mediaInput.value = "";
+      mediaStatus.hidden = true;
+    }
   };
   syncComposerUser();
 
@@ -403,7 +422,7 @@ export function mountFeed(container: HTMLElement): FeedControls {
     const length = [...composerInput.value].length;
     charCount.textContent = `${length} / ${MAX_CHARS}`;
     charCount.classList.toggle("is-over", length > MAX_CHARS);
-    composerBtn.disabled = length === 0 || length > MAX_CHARS;
+    composerBtn.disabled = length === 0 || length > MAX_CHARS || uploadingMedia;
   };
   composerInput.addEventListener("input", syncComposer);
   composerInput.addEventListener("input", () => {
@@ -411,6 +430,46 @@ export function mountFeed(container: HTMLElement): FeedControls {
     composerInput.style.height = `${composerInput.scrollHeight}px`;
   });
   syncComposer();
+
+  attachMediaBtn.addEventListener("click", () => {
+    if (!getAccount()) {
+      requestAuthentication();
+      return;
+    }
+    mediaInput.click();
+  });
+
+  mediaInput.addEventListener("change", async () => {
+    const file = mediaInput.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_MEDIA_BYTES) {
+      mediaStatus.textContent = "图片不能超过 10 MB";
+      mediaStatus.hidden = false;
+      mediaInput.value = "";
+      return;
+    }
+    uploadingMedia = true;
+    attachMediaBtn.disabled = true;
+    mediaStatus.textContent = "上传中…";
+    mediaStatus.hidden = false;
+    syncComposer();
+    try {
+      selectedMedia = await uploadMedia(file);
+      mediaStatus.textContent = `已添加：${file.name}`;
+    } catch (error) {
+      selectedMedia = null;
+      mediaStatus.textContent =
+        error instanceof Error ? error.message : "图片上传失败";
+      if (error instanceof ApiError && error.status === 401) {
+        requestAuthentication();
+      }
+    } finally {
+      uploadingMedia = false;
+      attachMediaBtn.disabled = false;
+      mediaInput.value = "";
+      syncComposer();
+    }
+  });
 
   composerBtn.addEventListener("click", async () => {
     if (!getAccount()) {
@@ -423,7 +482,7 @@ export function mountFeed(container: HTMLElement): FeedControls {
     const label = composerBtn.textContent;
     composerBtn.textContent = "发送中…";
     try {
-      await createPost(text);
+      await createPost(text, selectedMedia?.id);
       if (state.search !== null) {
         searchInput.value = "";
         state.search = null;
@@ -433,6 +492,8 @@ export function mountFeed(container: HTMLElement): FeedControls {
       state.done = false;
       composerInput.value = "";
       composerInput.style.height = "";
+      selectedMedia = null;
+      mediaStatus.hidden = true;
       syncComposer();
 
       scroller.scrollTo({ top: 0 });
@@ -458,6 +519,11 @@ export function mountFeed(container: HTMLElement): FeedControls {
 
   return {
     syncUser: syncComposerUser,
+    reload: () => {
+      state.cursor = null;
+      state.done = false;
+      void loadPage(true);
+    },
     dispose: () => {
       observer.disconnect();
       for (const [query] of COLUMN_QUERIES) {

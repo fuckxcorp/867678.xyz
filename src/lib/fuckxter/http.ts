@@ -41,7 +41,7 @@ export async function apiRequest<T>(
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
   headers.set("X-Fuckxter-Client", "web");
-  if (options.body && !(options.body instanceof FormData)) {
+  if (typeof options.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

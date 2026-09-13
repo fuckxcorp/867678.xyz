@@ -1,0 +1,95 @@
+import type { Env } from "./platform";
+
+const originCache = new WeakMap<Env, Set<string>>();
+
+function allowedOrigins(env: Env): Set<string> {
+  const cached = originCache.get(env);
+  if (cached) return cached;
+  const origins = new Set(
+    env.FUCKXTER_ORIGINS.split(",").map((item) => item.trim()),
+  );
+  originCache.set(env, origins);
+  return origins;
+}
+
+export class HttpError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export function corsHeaders(request: Request, env: Env): Headers {
+  const headers = new Headers({ Vary: "Origin" });
+  const origin = request.headers.get("Origin");
+  if (origin && allowedOrigins(env).has(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Credentials", "true");
+    headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, X-Fuckxter-Client",
+    );
+    headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    );
+  }
+  return headers;
+}
+
+export function json(
+  body: unknown,
+  request: Request,
+  env: Env,
+  init: ResponseInit = {},
+): Response {
+  const headers = corsHeaders(request, env);
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  return Response.json(body, { ...init, headers });
+}
+
+export async function readJson<T>(request: Request): Promise<T> {
+  try {
+    return (await request.json()) as T;
+  } catch {
+    throw new HttpError(400, "INVALID_JSON", "请求内容不是有效 JSON。");
+  }
+}
+
+export function errorResponse(
+  error: unknown,
+  request: Request,
+  env: Env,
+): Response {
+  if (error instanceof HttpError) {
+    return json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      request,
+      env,
+      { status: error.status },
+    );
+  }
+
+  console.error(error);
+  return json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "服务器内部错误。",
+      },
+    },
+    request,
+    env,
+    { status: 500 },
+  );
+}

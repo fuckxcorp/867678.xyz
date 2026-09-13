@@ -11,8 +11,7 @@ export function userPath(handle: string): string {
 export function parsePostPath(
   pathname: string,
 ): { handle: string; slug: string } | null {
-  // 兼容旧格式 /fuckxter/<handle>/<时间戳>-<shortid>
-  const match = pathname.match(/^\/fuckxter\/(?:post\/)?([^/]+)\/([^/]+)\/?$/i);
+  const match = pathname.match(/^\/fuckxter\/post\/([^/]+)\/([^/]+)\/?$/i);
   if (!match) return null;
   try {
     return {

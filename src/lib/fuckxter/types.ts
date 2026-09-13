@@ -19,11 +19,12 @@ export interface PostStats {
   likes: number;
 }
 
-/** 真实图片上传接入前的媒体占位 */
 export interface PostMedia {
+  id: string;
+  url: string;
   alt: string;
-  emoji: string;
-  gradient: [string, string];
+  contentType: string;
+  byteSize: number;
 }
 
 export interface Post {

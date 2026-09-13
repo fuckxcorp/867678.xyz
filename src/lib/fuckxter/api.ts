@@ -5,6 +5,7 @@ import type {
   FeedTab,
   LikeResult,
   Post,
+  PostMedia,
   RepostResult,
   SearchResult,
 } from "./types";
@@ -26,11 +27,23 @@ export function getTimeline(
   );
 }
 
-export function createPost(text: string): Promise<Post> {
+export function createPost(text: string, mediaId?: string): Promise<Post> {
   return apiRequest<Post>("/api/posts", {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, mediaId }),
   });
+}
+
+export async function uploadMedia(file: File): Promise<PostMedia> {
+  const response = await apiRequest<{ media: PostMedia }>("/api/media", {
+    method: "POST",
+    headers: {
+      "Content-Type": file.type,
+      "X-File-Name": file.name,
+    },
+    body: file,
+  });
+  return response.media;
 }
 
 export function toggleLike(id: string, liked: boolean): Promise<LikeResult> {
@@ -64,15 +77,6 @@ export async function toggleSave(post: Post, saved: boolean): Promise<Post[]> {
     },
   );
   return response.posts;
-}
-
-export async function getPostById(id: string): Promise<Post | null> {
-  try {
-    return await apiRequest<Post>(`/api/posts/${encodeURIComponent(id)}`);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
 }
 
 export async function getPostByPath(

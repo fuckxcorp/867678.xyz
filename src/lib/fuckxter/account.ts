@@ -7,6 +7,7 @@ import {
   type Account,
 } from "./auth";
 import { avatarGradient } from "./dom";
+import { ApiError } from "./http";
 import { userPath } from "./urls";
 
 interface AccountControlsOptions {
@@ -14,6 +15,7 @@ interface AccountControlsOptions {
 }
 
 export interface AccountControls {
+  sync: () => void;
   dispose: () => void;
 }
 
@@ -45,6 +47,12 @@ export function mountAccountControls(
   )!;
   const menuHandle = accountMenu.querySelector<HTMLElement>(
     "[data-role=menu-handle]",
+  )!;
+  const accountAvatar = container.querySelector<HTMLElement>(
+    "[data-role=account-avatar]",
+  )!;
+  const accountIcon = container.querySelector<SVGElement>(
+    "[data-role=account-icon]",
   )!;
   const themeTrigger = accountMenu.querySelector<HTMLButtonElement>(
     "[data-account-open=theme]",
@@ -81,18 +89,15 @@ export function mountAccountControls(
   };
 
   const renderAccountUI = () => {
-    const btnAvatar = container.querySelector<HTMLElement>(
-      "[data-role=account-avatar]",
-    )!;
-    const btnIcon = container.querySelector<SVGElement>(
-      "[data-role=account-icon]",
-    )!;
     if (account) {
       const initial = [...account.profile.name][0] ?? "?";
-      btnAvatar.hidden = false;
-      btnIcon.setAttribute("style", "display:none");
-      btnAvatar.setAttribute("style", avatarGradient(account.profile.handle));
-      btnAvatar.textContent = initial;
+      accountAvatar.hidden = false;
+      accountIcon.setAttribute("style", "display:none");
+      accountAvatar.setAttribute(
+        "style",
+        avatarGradient(account.profile.handle),
+      );
+      accountAvatar.textContent = initial;
       menuAvatar.setAttribute("style", avatarGradient(account.profile.handle));
       menuAvatar.textContent = initial;
       menuName.textContent = account.profile.name;
@@ -103,8 +108,8 @@ export function mountAccountControls(
       accountBtn.setAttribute("aria-label", "账号菜单");
       accountBtn.title = "账号菜单";
     } else {
-      btnAvatar.hidden = true;
-      btnIcon.removeAttribute("style");
+      accountAvatar.hidden = true;
+      accountIcon.removeAttribute("style");
       authItems.hidden = false;
       userItems.hidden = true;
       signoutItems.hidden = true;
@@ -225,9 +230,15 @@ export function mountAccountControls(
   const signinStatus = authModal.querySelector<HTMLElement>(
     "[data-role=signin-status]",
   )!;
+  const loginTfaField = authModal.querySelector<HTMLElement>(
+    "[data-role=login-tfa-field]",
+  )!;
+  const loginTfaInput =
+    loginTfaField.querySelector<HTMLInputElement>("[name=code]")!;
 
   const openAuthModal = () => {
     signinForm.reset();
+    loginTfaField.hidden = true;
     setStatus(signinStatus, "");
     openModal(authModal);
   };
@@ -256,10 +267,18 @@ export function mountAccountControls(
       account = await signIn({
         identifier: String(data.get("identifier") ?? ""),
         password: String(data.get("password") ?? ""),
+        code: String(data.get("code") ?? ""),
       });
       renderAccountUI();
       closeModal(authModal);
     } catch (error) {
+      if (
+        error instanceof ApiError &&
+        (error.code === "TWO_FACTOR_REQUIRED" || error.code === "INVALID_TOTP")
+      ) {
+        loginTfaField.hidden = false;
+        loginTfaInput.focus();
+      }
       setStatus(
         signinStatus,
         error instanceof Error ? error.message : "登录失败",
@@ -272,6 +291,10 @@ export function mountAccountControls(
   renderAccountUI();
 
   return {
+    sync: () => {
+      account = getAccount();
+      renderAccountUI();
+    },
     dispose: () => {
       document.removeEventListener("click", onDocClick, true);
       document.removeEventListener("keydown", onMenuKeydown, true);

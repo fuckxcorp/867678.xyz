@@ -3,6 +3,7 @@ import "modern-normalize/modern-normalize.css";
 import "../styles/global.css";
 import "../styles/pages.css";
 import Sidebar from "../components/Sidebar.astro";
+import ThemeScript from "../components/ThemeScript.astro";
 import { ClientRouter } from "astro:transitions";
 import { buildTime, version } from "../lib/version";
 
@@ -21,39 +22,7 @@ const { title = "Home" } = Astro.props;
     <meta name="generator" content={Astro.generator} />
     <title>{title} | MoAEIOU</title>
     <ClientRouter />
-    <script is:inline>
-      (() => {
-        const mq = matchMedia("(prefers-color-scheme: dark)");
-        const applyTheme = () => {
-          const mode = localStorage.getItem("theme") ?? "auto";
-          const dark = mode === "dark" || (mode === "auto" && mq.matches);
-          document.documentElement.dataset.themeMode = mode;
-          document.documentElement.dataset.theme = dark ? "dark" : "light";
-        };
-        const playPageEnter = () => {
-          const wrapper = document.querySelector(".pages-wrapper");
-          const entry = document.querySelector(".page-entry");
-          wrapper?.scrollTo(0, 0);
-          if (!entry || typeof entry.animate !== "function") return;
-          if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-          entry.animate(
-            [
-              { opacity: 0, transform: "translateY(10px)" },
-              { opacity: 1, transform: "none" },
-            ],
-            {
-              duration: 300,
-              easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-              fill: "both",
-            },
-          );
-        };
-        applyTheme();
-        mq.addEventListener("change", applyTheme);
-        document.addEventListener("astro:after-swap", applyTheme);
-        document.addEventListener("astro:after-swap", playPageEnter);
-      })();
-    </script>
+    <ThemeScript pageEnter />
     <script is:inline define:vars={{ version, buildTime }}>
       console.info(`V${version} ${buildTime}`);
     </script>

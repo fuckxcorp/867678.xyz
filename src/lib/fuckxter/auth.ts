@@ -84,6 +84,7 @@ export function requestAuthentication(): void {
 export async function signIn(input: {
   identifier: string;
   password: string;
+  code?: string;
 }): Promise<Account> {
   const response = await apiRequest<AccountResponse>("/api/auth/login", {
     method: "POST",

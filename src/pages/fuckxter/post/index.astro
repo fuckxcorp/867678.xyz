@@ -45,7 +45,6 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
     createComment,
     getComments,
     getPostByPath,
-    getPostById,
     toggleLike,
     toggleRepost,
   } from "../../../lib/fuckxter/api";
@@ -283,7 +282,6 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
     });
 
     const parsedPath = parsePostPath(location.pathname);
-    const legacyId = new URLSearchParams(location.search).get("id") ?? "";
     const host = container.querySelector<HTMLElement>(
       "[data-role=post-detail]",
     )!;
@@ -291,9 +289,7 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
 
     const postRequest = parsedPath
       ? getPostByPath(parsedPath.handle, parsedPath.slug)
-      : legacyId
-        ? getPostById(legacyId)
-        : Promise.resolve(null);
+      : Promise.resolve(null);
 
     void postRequest
       .then((post) => {
