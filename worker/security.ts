@@ -3,7 +3,7 @@ import type { Env, SessionUserRow, UserRow } from "./platform";
 
 const SESSION_COOKIE = "fk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 120_000;
+const PASSWORD_ITERATIONS = 100_000;
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
