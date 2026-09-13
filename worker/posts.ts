@@ -1,6 +1,7 @@
 import { HttpError } from "./http";
 import type { D1PreparedStatement, Env, PostRow } from "./platform";
 import { randomId } from "./security";
+import { usernameKey } from "./usernames";
 
 const POST_SELECT = `
   SELECT
@@ -161,11 +162,17 @@ export async function getPostByPath(
 ) {
   const row = await env.DB.prepare(
     `${POST_SELECT}
-     WHERE p.slug = ? AND u.handle = ? COLLATE NOCASE
+     WHERE p.slug = ? AND u.handle_key = ?
        AND p.deleted_at IS NULL
      LIMIT 1`,
   )
-    .bind(viewerId ?? "", viewerId ?? "", viewerId ?? "", slug, handle)
+    .bind(
+      viewerId ?? "",
+      viewerId ?? "",
+      viewerId ?? "",
+      slug,
+      usernameKey(handle),
+    )
     .first<PostRow>();
   return row ? publicPost(row) : null;
 }
@@ -178,10 +185,10 @@ export async function getPostsByUser(
   const rows = await allPosts<PostRow>(
     env.DB.prepare(
       `${POST_SELECT}
-       WHERE u.handle = ? COLLATE NOCASE AND p.deleted_at IS NULL
+       WHERE u.handle_key = ? AND p.deleted_at IS NULL
        ORDER BY p.created_at DESC, p.id DESC
        LIMIT 100`,
-    ).bind(viewerId ?? "", viewerId ?? "", viewerId ?? "", handle),
+    ).bind(viewerId ?? "", viewerId ?? "", viewerId ?? "", usernameKey(handle)),
   );
   return rows.map(publicPost);
 }

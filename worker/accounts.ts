@@ -12,9 +12,32 @@ import {
   verifyPassword,
   verifyTotp,
 } from "./security";
+import { usernameKey, validateUsername } from "./usernames";
 
 const RESERVED_HANDLES = new Set(["user", "post", "settings", "api", "assets"]);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_BIRTHDAY = "1700-01-01";
+
+function validateBirthday(value: string): string {
+  const birthday = value.trim();
+  if (!birthday) return "";
+  const date = new Date(`${birthday}T00:00:00Z`);
+  const today = new Date().toISOString().slice(0, 10);
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(birthday) ||
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== birthday ||
+    birthday < MIN_BIRTHDAY ||
+    birthday > today
+  ) {
+    throw new HttpError(
+      400,
+      "INVALID_BIRTHDAY",
+      "Birthday must be between 1700-01-01 and today.",
+    );
+  }
+  return birthday;
+}
 
 function handleFromEmail(email: string): string {
   const base = email
@@ -32,10 +55,11 @@ async function findUserByIdentifier(
   env: Env,
   identifier: string,
 ): Promise<UserRow | null> {
+  const handleKey = identifier.includes("@") ? "" : usernameKey(identifier);
   return env.DB.prepare(
-    "SELECT * FROM users WHERE email = ? COLLATE NOCASE OR handle = ? COLLATE NOCASE LIMIT 1",
+    "SELECT * FROM users WHERE email = ? COLLATE NOCASE OR handle_key = ? LIMIT 1",
   )
-    .bind(identifier, identifier)
+    .bind(identifier, handleKey)
     .first<UserRow>();
 }
 
@@ -59,7 +83,7 @@ export async function loginOrRegister(
   password: string,
   code?: string,
 ) {
-  const identifier = identifierValue.trim().replace(/^@/, "").toLowerCase();
+  const identifier = identifierValue.trim().replace(/^@/, "").normalize("NFKC");
   if (!identifier)
     throw new HttpError(400, "EMAIL_REQUIRED", "Email is required.");
   if (!password)
@@ -104,6 +128,7 @@ export async function loginOrRegister(
 
   const email = identifier;
   const handle = handleFromEmail(email);
+  const handleKey = usernameKey(handle);
   const id = randomId();
   const now = new Date().toISOString();
   const passwordValue = await createPasswordHash(password);
@@ -111,8 +136,8 @@ export async function loginOrRegister(
     await env.DB.prepare(
       `INSERT INTO users (
          id, handle, email, password_hash, password_salt, name, verified,
-         bio, region, gender, birthday, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, 0, '', '', '', '', ?, ?)`,
+         handle_key, bio, region, gender, birthday, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, '', '', '', '', ?, ?)`,
     )
       .bind(
         id,
@@ -121,6 +146,7 @@ export async function loginOrRegister(
         passwordValue.hash,
         passwordValue.salt,
         handle,
+        handleKey,
         now,
         now,
       )
@@ -150,24 +176,54 @@ export async function updateProfile(
     region?: string;
     gender?: string;
     birthday?: string;
+    handle?: string;
   },
 ) {
-  const now = new Date().toISOString();
-  await env.DB.prepare(
-    `UPDATE users
-     SET name = ?, bio = ?, region = ?, gender = ?, birthday = ?, updated_at = ?
-     WHERE id = ?`,
+  const current = await env.DB.prepare(
+    "SELECT handle, handle_key FROM users WHERE id = ?",
   )
-    .bind(
-      input.name?.trim() || "User",
-      input.bio?.trim() ?? "",
-      input.region?.trim() ?? "",
-      input.gender?.trim() ?? "",
-      input.birthday?.trim() ?? "",
-      now,
-      userId,
+    .bind(userId)
+    .first<{ handle: string; handle_key: string | null }>();
+  if (!current) {
+    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
+  }
+
+  const username = validateUsername(input.handle ?? current.handle);
+  const birthday = validateBirthday(input.birthday ?? "");
+  if (username.handleKey !== current.handle_key) {
+    const existing = await env.DB.prepare(
+      "SELECT id FROM users WHERE handle_key = ? LIMIT 1",
     )
-    .run();
+      .bind(username.handleKey)
+      .first<{ id: string }>();
+    if (existing && existing.id !== userId) {
+      throw new HttpError(409, "USERNAME_TAKEN", "Username is already in use.");
+    }
+  }
+
+  const now = new Date().toISOString();
+  try {
+    await env.DB.prepare(
+      `UPDATE users
+       SET handle = ?, handle_key = ?, name = ?, bio = ?, region = ?,
+           gender = ?, birthday = ?, updated_at = ?
+       WHERE id = ?`,
+    )
+      .bind(
+        username.handle,
+        username.handleKey,
+        input.name?.trim() || "User",
+        input.bio?.trim() ?? "",
+        input.region?.trim() ?? "",
+        input.gender?.trim() ?? "",
+        birthday,
+        now,
+        userId,
+      )
+      .run();
+  } catch {
+    throw new HttpError(409, "USERNAME_TAKEN", "Username is already in use.");
+  }
   return getAccount(env, userId);
 }
 

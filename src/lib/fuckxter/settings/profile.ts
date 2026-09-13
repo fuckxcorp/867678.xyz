@@ -1,7 +1,8 @@
-import { uploadMedia, updateAvatar } from "../api";
+import { removeAvatar, uploadAvatar } from "../api";
 import { getAccount, hydrateSession, updateProfile } from "../auth";
 import { avatarGradient } from "../dom";
 import { apiEndpoint } from "../http";
+import { isValidBirthday, isValidUsername } from "../validation";
 import { setStatus, type SettingsContext } from "./shared";
 
 const GENDER_PRESETS = ["男", "女", "跨性别男", "跨性别女"];
@@ -30,6 +31,10 @@ export function mountProfileSettings(
   )!;
   const genderSelect =
     profileForm.querySelector<HTMLSelectElement>("[name=gender]")!;
+  const handleInput =
+    profileForm.querySelector<HTMLInputElement>("[name=handle]")!;
+  const birthdayInput =
+    profileForm.querySelector<HTMLInputElement>("[name=birthday]")!;
   const genderCustomInput = profileForm.querySelector<HTMLInputElement>(
     "[name=genderCustom]",
   )!;
@@ -93,8 +98,7 @@ export function mountProfileSettings(
     avatarUpload.disabled = true;
     setStatus(profileStatus, "Uploading avatar...");
     try {
-      const media = await uploadMedia(file);
-      await updateAvatar(media.id);
+      await uploadAvatar(file);
       await refreshAccount();
       setStatus(profileStatus, "Avatar updated");
     } catch (error) {
@@ -110,7 +114,7 @@ export function mountProfileSettings(
   avatarRemove.addEventListener("click", async () => {
     avatarRemove.disabled = true;
     try {
-      await updateAvatar(null);
+      await removeAvatar();
       await refreshAccount();
       setStatus(profileStatus, "Avatar removed");
     } catch (error) {
@@ -137,6 +141,27 @@ export function mountProfileSettings(
     event.preventDefault();
     if (!context.getAccount()) return;
     const data = new FormData(profileForm);
+    const handle = String(data.get("handle") ?? "")
+      .trim()
+      .normalize("NFKC");
+    if (!isValidUsername(handle)) {
+      handleInput.setAttribute("aria-invalid", "true");
+      setStatus(
+        profileStatus,
+        "Username must be 2-32 Unicode letters, numbers, combining marks, underscores, or hyphens",
+      );
+      handleInput.focus();
+      return;
+    }
+    handleInput.removeAttribute("aria-invalid");
+    const birthday = String(data.get("birthday") ?? "").trim();
+    if (!isValidBirthday(birthday)) {
+      birthdayInput.setAttribute("aria-invalid", "true");
+      setStatus(profileStatus, "生日必须在 1700-01-01 到今天之间");
+      birthdayInput.focus();
+      return;
+    }
+    birthdayInput.removeAttribute("aria-invalid");
     const gender =
       genderSelect.value === "自定义"
         ? String(data.get("genderCustom") ?? "").trim() || "自定义"
@@ -146,11 +171,12 @@ export function mountProfileSettings(
     button.disabled = true;
     try {
       const account = await updateProfile({
+        handle,
         name: String(data.get("name") ?? ""),
         bio: String(data.get("bio") ?? ""),
         region: String(data.get("region") ?? ""),
         gender,
-        birthday: String(data.get("birthday") ?? ""),
+        birthday,
       });
       context.setAccount(account);
       fillProfileForm();
@@ -167,4 +193,5 @@ export function mountProfileSettings(
   });
 
   fillProfileForm();
+  birthdayInput.max = new Date().toISOString().slice(0, 10);
 }

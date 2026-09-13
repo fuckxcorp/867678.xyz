@@ -78,7 +78,11 @@ function mediaJson(row: MediaRow) {
   };
 }
 
-export async function uploadMedia(request: Request, env: Env, userId: string) {
+async function readImage(request: Request): Promise<{
+  bytes: ArrayBuffer;
+  contentType: string;
+  originalName: string;
+}> {
   const contentLength = Number(request.headers.get("Content-Length") ?? "0");
   if (contentLength > MAX_IMAGE_BYTES) {
     throw new HttpError(413, "MEDIA_TOO_LARGE", "Image cannot exceed 10 MB.");
@@ -96,6 +100,15 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
       "Only JPEG, PNG, GIF, WebP, and AVIF images are supported.",
     );
   }
+  return {
+    bytes,
+    contentType,
+    originalName: safeFileName(request.headers.get("X-File-Name")),
+  };
+}
+
+export async function uploadMedia(request: Request, env: Env, userId: string) {
+  const { bytes, contentType, originalName } = await readImage(request);
 
   const config = await getStorageConfig(env, userId);
   if (!config) {
@@ -130,7 +143,6 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
 
   const id = randomId();
   const now = new Date().toISOString();
-  const originalName = safeFileName(request.headers.get("X-File-Name"));
   await env.DB.prepare(
     `INSERT INTO media_objects (
        id, owner_id, object_key, original_name, content_type,
@@ -162,6 +174,62 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
     created_at: now,
     updated_at: now,
   });
+}
+
+export async function uploadAvatar(
+  request: Request,
+  env: Env,
+  userId: string,
+): Promise<string> {
+  const { bytes, contentType } = await readImage(request);
+  const sha256 = await sha256Hex(bytes);
+  const objectKey = `avatars/${userId}/${sha256}.${extensionFor(contentType)}`;
+  const current = await env.DB.prepare(
+    "SELECT avatar_key FROM users WHERE id = ?",
+  )
+    .bind(userId)
+    .first<{ avatar_key: string | null }>();
+  await env.MEDIA_CACHE.put(objectKey, bytes, {
+    httpMetadata: { contentType },
+  });
+  await env.DB.prepare(
+    `UPDATE users
+     SET avatar_key = ?, avatar_media_id = NULL, updated_at = ?
+     WHERE id = ?`,
+  )
+    .bind(objectKey, new Date().toISOString(), userId)
+    .run();
+  if (current?.avatar_key && current.avatar_key !== objectKey) {
+    await env.MEDIA_CACHE.delete(current.avatar_key);
+  }
+  return `/api/avatars/${encodeURIComponent(userId)}`;
+}
+
+export async function getAvatar(
+  env: Env,
+  userId: string,
+): Promise<{
+  body: ReadableStream;
+  contentType: string;
+  size: number;
+  etag: string;
+}> {
+  const user = await env.DB.prepare("SELECT avatar_key FROM users WHERE id = ?")
+    .bind(userId)
+    .first<{ avatar_key: string | null }>();
+  if (!user?.avatar_key) {
+    throw new HttpError(404, "AVATAR_NOT_FOUND", "Avatar not found.");
+  }
+  const object = await env.MEDIA_CACHE.get(user.avatar_key);
+  if (!object) {
+    throw new HttpError(404, "AVATAR_NOT_FOUND", "Avatar not found.");
+  }
+  return {
+    body: object.body,
+    contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
+    size: object.size,
+    etag: user.avatar_key,
+  };
 }
 
 async function getMediaRow(env: Env, id: string): Promise<MediaRow> {

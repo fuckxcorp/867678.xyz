@@ -140,9 +140,13 @@ const sectionTitles: Record<SettingsSection, string> = {
               <input
                 name="handle"
                 type="text"
-                disabled
-                title="用户名暂不支持修改"
+                minlength="2"
+                maxlength="32"
+                required
               />
+              <span class="fk-form-hint">
+                2-32 个 Unicode 字母、数字、组合字符、下划线或连字符
+              </span>
             </label>
             <label class="fk-field">
               <span class="fk-field-label">性别</span>
@@ -178,9 +182,9 @@ const sectionTitles: Record<SettingsSection, string> = {
               <span class="fk-field-label">生日</span>
               <input
                 name="birthday"
-                type="text"
-                maxlength="30"
-                placeholder="如：2000-01-01"
+                type="date"
+                min="1700-01-01"
+                max={new Date().toISOString().slice(0, 10)}
               />
             </label>
             <label class="fk-field">

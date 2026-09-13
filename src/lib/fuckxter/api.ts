@@ -142,9 +142,19 @@ export function setFollow(
   });
 }
 
-export async function updateAvatar(mediaId: string | null): Promise<void> {
+export async function uploadAvatar(file: File): Promise<void> {
   await apiRequest("/api/me/avatar", {
-    method: mediaId ? "PUT" : "DELETE",
-    body: mediaId ? JSON.stringify({ mediaId }) : undefined,
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type,
+      "X-File-Name": file.name,
+    },
+    body: file,
+  });
+}
+
+export async function removeAvatar(): Promise<void> {
+  await apiRequest("/api/me/avatar", {
+    method: "DELETE",
   });
 }

@@ -1,11 +1,13 @@
 import type { Post } from "./types";
+import { usernameKey } from "./validation";
 
 export function postPath(post: Post): string {
   return `/fuckxter/post/${encodeURIComponent(post.author.handle)}/${encodeURIComponent(post.slug)}`;
 }
 
 export function userPath(handle: string): string {
-  return `/fuckxter/user/${encodeURIComponent(handle.replace(/^@/, "").toLowerCase())}`;
+  const normalized = handle.replace(/^@/, "").normalize("NFKC").trim();
+  return `/fuckxter/user/${encodeURIComponent(normalized)}`;
 }
 
 export function parsePostPath(
@@ -15,7 +17,7 @@ export function parsePostPath(
   if (!match) return null;
   try {
     return {
-      handle: decodeURIComponent(match[1]).toLowerCase(),
+      handle: usernameKey(decodeURIComponent(match[1])),
       slug: match[2].toLowerCase(),
     };
   } catch {
@@ -27,7 +29,7 @@ export function parseUserPath(pathname: string): string | null {
   const match = pathname.match(/^\/fuckxter\/user\/([^/]+)\/?$/i);
   if (!match) return null;
   try {
-    return decodeURIComponent(match[1]).replace(/^@/, "").toLowerCase();
+    return usernameKey(decodeURIComponent(match[1]).replace(/^@/, ""));
   } catch {
     return null;
   }

@@ -114,6 +114,7 @@ export async function updateProfile(input: {
   region: string;
   gender: string;
   birthday: string;
+  handle: string;
 }): Promise<Account> {
   const response = await apiRequest<AccountResponse>("/api/me", {
     method: "PATCH",

@@ -1,5 +1,6 @@
 import { HttpError } from "./http";
 import type { Env } from "./platform";
+import { usernameKey } from "./usernames";
 
 interface ProfileRow {
   id: string;
@@ -12,6 +13,7 @@ interface ProfileRow {
   birthday: string;
   created_at: string;
   avatar_media_id: string | null;
+  avatar_key: string | null;
   post_count: number;
   follower_count: number;
   following_count: number;
@@ -29,9 +31,11 @@ function publicProfile(row: ProfileRow) {
     gender: row.gender,
     birthday: row.birthday,
     createdAt: row.created_at,
-    avatarUrl: row.avatar_media_id
-      ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
-      : null,
+    avatarUrl: row.avatar_key
+      ? `/api/avatars/${encodeURIComponent(row.id)}`
+      : row.avatar_media_id
+        ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
+        : null,
     stats: {
       posts: Number(row.post_count),
       followers: Number(row.follower_count),
@@ -60,6 +64,7 @@ export async function getUserProfile(
        u.birthday,
        u.created_at,
        u.avatar_media_id,
+       u.avatar_key,
        (SELECT COUNT(*) FROM posts p
          WHERE p.author_id = u.id AND p.deleted_at IS NULL) AS post_count,
        (SELECT COUNT(*) FROM follows f
@@ -71,10 +76,10 @@ export async function getUserProfile(
          WHERE vf.follower_id = ? AND vf.followee_id = u.id
        ) AS following
      FROM users u
-     WHERE u.handle = ? COLLATE NOCASE
+     WHERE u.handle_key = ?
      LIMIT 1`,
   )
-    .bind(viewerId ?? "", handle)
+    .bind(viewerId ?? "", usernameKey(handle))
     .first<ProfileRow>();
   return row ? publicProfile(row) : null;
 }
@@ -86,9 +91,9 @@ export async function setFollow(
   active: boolean,
 ) {
   const target = await env.DB.prepare(
-    "SELECT id FROM users WHERE handle = ? COLLATE NOCASE",
+    "SELECT id FROM users WHERE handle_key = ?",
   )
-    .bind(handle)
+    .bind(usernameKey(handle))
     .first<{ id: string }>();
   if (!target) throw new HttpError(404, "USER_NOT_FOUND", "User not found.");
   if (target.id === followerId) {
@@ -127,29 +132,16 @@ export async function setFollow(
   };
 }
 
-export async function setAvatar(
-  env: Env,
-  userId: string,
-  mediaId: string | null,
-) {
-  if (mediaId) {
-    const media = await env.DB.prepare(
-      `SELECT id FROM media_objects
-       WHERE id = ? AND owner_id = ? AND status = 'ready'`,
-    )
-      .bind(mediaId, userId)
-      .first<{ id: string }>();
-    if (!media) {
-      throw new HttpError(
-        400,
-        "INVALID_MEDIA",
-        "Media not found or does not belong to this user.",
-      );
-    }
-  }
+export async function clearAvatar(env: Env, userId: string) {
+  const user = await env.DB.prepare("SELECT avatar_key FROM users WHERE id = ?")
+    .bind(userId)
+    .first<{ avatar_key: string | null }>();
   await env.DB.prepare(
-    "UPDATE users SET avatar_media_id = ?, updated_at = ? WHERE id = ?",
+    `UPDATE users
+     SET avatar_media_id = NULL, avatar_key = NULL, updated_at = ?
+     WHERE id = ?`,
   )
-    .bind(mediaId, new Date().toISOString(), userId)
+    .bind(new Date().toISOString(), userId)
     .run();
+  if (user?.avatar_key) await env.MEDIA_CACHE.delete(user.avatar_key);
 }

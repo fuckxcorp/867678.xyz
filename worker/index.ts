@@ -8,7 +8,7 @@ import {
   updateProfile,
 } from "./accounts";
 import { corsHeaders, errorResponse, HttpError, json, readJson } from "./http";
-import { getMedia, uploadMedia } from "./media";
+import { getAvatar, getMedia, uploadAvatar, uploadMedia } from "./media";
 import type { Env } from "./platform";
 import {
   createComment,
@@ -37,7 +37,7 @@ import {
   requireUser,
 } from "./security";
 import { getStorageConfig, saveStorageConfig } from "./storage";
-import { getUserProfile, setAvatar, setFollow } from "./users";
+import { clearAvatar, getUserProfile, setFollow } from "./users";
 
 function withCookie(response: Response, cookie: string): Response {
   response.headers.append("Set-Cookie", cookie);
@@ -152,6 +152,27 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
     }
   }
 
+  if (
+    parts[1] === "avatars" &&
+    parts.length === 3 &&
+    (method === "GET" || method === "HEAD")
+  ) {
+    const avatar = await getAvatar(env, segment(parts, 2));
+    const headers = corsHeaders(request, env);
+    headers.set("Content-Type", avatar.contentType);
+    headers.set("Content-Length", String(avatar.size));
+    headers.set("Content-Disposition", "inline");
+    headers.set("X-Content-Type-Options", "nosniff");
+    headers.set("Content-Security-Policy", "default-src 'none'; sandbox");
+    headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    headers.set("ETag", `"${avatar.etag}"`);
+    return new Response(method === "HEAD" ? null : avatar.body, {
+      status: 200,
+      headers,
+    });
+  }
+
   if (parts[1] === "search" && parts.length === 2 && method === "GET") {
     const user = await getOptionalUser(request, env);
     return json(
@@ -206,11 +227,8 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
       parts.length === 3 &&
       (method === "PUT" || method === "DELETE")
     ) {
-      const body =
-        method === "PUT"
-          ? await readJson<{ mediaId?: string }>(request)
-          : { mediaId: "" };
-      await setAvatar(env, user.id, body.mediaId?.trim() || null);
+      if (method === "PUT") await uploadAvatar(request, env, user.id);
+      else await clearAvatar(env, user.id);
       const updated = await requireUser(request, env);
       return json({ account: accountFromRow(updated) }, request, env);
     }

@@ -185,9 +185,11 @@ export function accountFromRow(
       gender: row.gender,
       birthday: row.birthday,
     },
-    avatarUrl: row.avatar_media_id
-      ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
-      : null,
+    avatarUrl: row.avatar_key
+      ? `/api/avatars/${encodeURIComponent(row.id)}`
+      : row.avatar_media_id
+        ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
+        : null,
     twoFactorEnabled: Boolean(row.two_factor_enabled),
     recoveryCodeCount: Number(row.recovery_code_count ?? 0),
     createdAt: row.created_at,
