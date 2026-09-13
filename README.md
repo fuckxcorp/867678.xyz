@@ -60,7 +60,15 @@ Cloudflare Pages, not in the GitHub Actions workflow:
 6. Save the variable and redeploy the Pages project.
 
 This is a build-time variable, so changing it requires another frontend
-deployment.
+deployment. If it is omitted, the frontend defaults to:
+
+```dotenv
+PUBLIC_FUCKXTER_API_URL=https://api.867678.xyz
+```
+
+The default is required because this repository builds through GitHub Actions.
+Cloudflare Pages runtime variables are not automatically injected into an
+external GitHub Actions build.
 
 The Worker must allow the frontend origin with credentials:
 

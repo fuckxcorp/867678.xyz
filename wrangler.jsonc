@@ -7,7 +7,7 @@
     "enabled": true,
   },
   "vars": {
-    "FUCKXTER_ORIGINS": "http://localhost:4321,https://867678.xyz,https://www.867678.xyz",
+    "FUCKXTER_ORIGINS": "http://localhost:4321,https://867678.xyz,https://www.867678.xyz,https://*.867678.pages.dev",
   },
   "routes": [
     {

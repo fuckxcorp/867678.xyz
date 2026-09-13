@@ -1,15 +1,21 @@
 import type { Env } from "./platform";
 
-const originCache = new WeakMap<Env, Set<string>>();
+const originCache = new WeakMap<Env, string[]>();
 
-function allowedOrigins(env: Env): Set<string> {
+function allowedOrigins(env: Env): string[] {
   const cached = originCache.get(env);
   if (cached) return cached;
-  const origins = new Set(
-    env.FUCKXTER_ORIGINS.split(",").map((item) => item.trim()),
-  );
+  const origins = env.FUCKXTER_ORIGINS.split(",").map((item) => item.trim());
   originCache.set(env, origins);
   return origins;
+}
+
+function originAllowed(origin: string, patterns: string[]): boolean {
+  return patterns.some((pattern) => {
+    if (!pattern.includes("*")) return origin === pattern;
+    const [prefix, suffix] = pattern.split("*");
+    return origin.startsWith(prefix) && origin.endsWith(suffix);
+  });
 }
 
 export class HttpError extends Error {
@@ -27,7 +33,7 @@ export class HttpError extends Error {
 export function corsHeaders(request: Request, env: Env): Headers {
   const headers = new Headers({ Vary: "Origin" });
   const origin = request.headers.get("Origin");
-  if (origin && allowedOrigins(env).has(origin)) {
+  if (origin && originAllowed(origin, allowedOrigins(env))) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Allow-Credentials", "true");
     headers.set(

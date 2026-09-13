@@ -9,6 +9,7 @@ import {
 import { avatarGradient } from "./dom";
 import { ApiError, apiEndpoint } from "./http";
 import { userPath } from "./urls";
+import { isValidEmail } from "./validation";
 
 interface AccountControlsOptions {
   onAccountChange: () => void;
@@ -238,6 +239,8 @@ export function mountAccountControls(
   const signinForm = authModal.querySelector<HTMLFormElement>(
     "[data-role=signin-form]",
   )!;
+  const signinIdentifier =
+    signinForm.querySelector<HTMLInputElement>("[name=identifier]")!;
   const signinStatus = authModal.querySelector<HTMLElement>(
     "[data-role=signin-status]",
   )!;
@@ -270,13 +273,21 @@ export function mountAccountControls(
   signinForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(signinForm);
+    const identifier = String(data.get("identifier") ?? "").trim();
+    if (!isValidEmail(identifier)) {
+      signinIdentifier.setAttribute("aria-invalid", "true");
+      setStatus(signinStatus, "请输入有效的邮箱地址");
+      signinIdentifier.focus();
+      return;
+    }
+    signinIdentifier.removeAttribute("aria-invalid");
     const button =
       signinForm.querySelector<HTMLButtonElement>(".fk-primary-btn")!;
     button.disabled = true;
     setStatus(signinStatus, "登录中…");
     try {
       account = await signIn({
-        identifier: String(data.get("identifier") ?? ""),
+        identifier,
         password: String(data.get("password") ?? ""),
         code: String(data.get("code") ?? ""),
       });

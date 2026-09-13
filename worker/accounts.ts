@@ -14,6 +14,7 @@ import {
 } from "./security";
 
 const RESERVED_HANDLES = new Set(["user", "post", "settings", "api", "assets"]);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function handleFromEmail(email: string): string {
   const base = email
@@ -63,6 +64,10 @@ export async function loginOrRegister(
     throw new HttpError(400, "EMAIL_REQUIRED", "Email is required.");
   if (!password)
     throw new HttpError(400, "PASSWORD_REQUIRED", "Password is required.");
+  const isEmail = identifier.includes("@");
+  if (isEmail && (identifier.length > 254 || !EMAIL_PATTERN.test(identifier))) {
+    throw new HttpError(400, "INVALID_EMAIL", "Invalid email address.");
+  }
 
   let user = await findUserByIdentifier(env, identifier);
   if (user) {
@@ -89,9 +94,15 @@ export async function loginOrRegister(
     return { userId: user.id, account: await getAccount(env, user.id) };
   }
 
-  const email = identifier.includes("@")
-    ? identifier
-    : `${identifier}@local.invalid`;
+  if (!isEmail) {
+    throw new HttpError(
+      400,
+      "INVALID_EMAIL",
+      "A valid email address is required for registration.",
+    );
+  }
+
+  const email = identifier;
   const handle = handleFromEmail(email);
   const id = randomId();
   const now = new Date().toISOString();
@@ -179,7 +190,7 @@ export async function changeEmail(
     );
   }
   const email = emailValue.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
     throw new HttpError(400, "INVALID_EMAIL", "Invalid email address.");
   }
   try {

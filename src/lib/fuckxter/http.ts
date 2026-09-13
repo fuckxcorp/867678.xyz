@@ -1,7 +1,4 @@
-const API_BASE = (import.meta.env.PUBLIC_FUCKXTER_API_URL ?? "").replace(
-  /\/+$/,
-  "",
-);
+import { FUCKXTER_API_URL } from "./config";
 
 interface ApiErrorBody {
   error?: {
@@ -24,14 +21,7 @@ export class ApiError extends Error {
 }
 
 export function apiEndpoint(path: string): string {
-  if (!API_BASE) {
-    throw new ApiError(
-      "未配置 PUBLIC_FUCKXTER_API_URL，无法连接 FuckXter 后端。",
-      0,
-      "API_NOT_CONFIGURED",
-    );
-  }
-  return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  return `${FUCKXTER_API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 export async function apiRequest<T>(

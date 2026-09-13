@@ -10,6 +10,7 @@ import {
   setStatus,
   type SettingsContext,
 } from "./shared";
+import { isValidEmail } from "../validation";
 
 export function mountSecuritySettings(
   root: HTMLElement,
@@ -30,12 +31,22 @@ export function mountSecuritySettings(
     event.preventDefault();
     if (!context.getAccount()) return;
     const data = new FormData(emailForm);
+    const email = String(data.get("email") ?? "").trim();
+    const emailInput =
+      emailForm.querySelector<HTMLInputElement>("[name=email]")!;
+    if (!isValidEmail(email)) {
+      emailInput.setAttribute("aria-invalid", "true");
+      setStatus(emailStatus, "请输入有效的邮箱地址");
+      emailInput.focus();
+      return;
+    }
+    emailInput.removeAttribute("aria-invalid");
     const button =
       emailForm.querySelector<HTMLButtonElement>(".fk-primary-btn")!;
     button.disabled = true;
     try {
       const account = await changeEmail({
-        email: String(data.get("email") ?? ""),
+        email,
         password: String(data.get("password") ?? ""),
       });
       context.setAccount(account);
