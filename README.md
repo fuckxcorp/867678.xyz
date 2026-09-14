@@ -1,6 +1,6 @@
 # 867678.xyz
 
-Source code of 867678.xyz, FuckXter, MoITools , CyAks.
+Source code of 867678.xyz, MoITools, and CyAks.
 
 ## 🚀 How to init
 
@@ -42,58 +42,8 @@ To solve this problem, we created a simple script.
 
 Run `pnpm fresh` to run this script and refresh the CDN cache, so that the CDN gets the latest files.
 
-## FuckXter API
-
-FuckXter uses a separate Cloudflare Worker API. Configure the API origin in
-Cloudflare Pages, not in the GitHub Actions workflow:
-
-1. Open the Cloudflare Dashboard.
-2. Go to Workers & Pages.
-3. Select the Pages project `ws-867678`.
-4. Open Settings, then Variables and Secrets.
-5. Add `PUBLIC_FUCKXTER_API_URL` for Production and Preview:
-
-   ```dotenv
-   PUBLIC_FUCKXTER_API_URL=https://api.867678.xyz
-   ```
-
-6. Save the variable and redeploy the Pages project.
-
-This is a build-time variable, so changing it requires another frontend
-deployment. If it is omitted, the frontend defaults to:
-
-```dotenv
-PUBLIC_FUCKXTER_API_URL=https://api.867678.xyz
-```
-
-The default is required because this repository builds through GitHub Actions.
-Cloudflare Pages runtime variables are not automatically injected into an
-external GitHub Actions build.
-
-The Worker must allow the frontend origin with credentials:
-
-- `Access-Control-Allow-Origin`: the exact frontend origin
-- `Access-Control-Allow-Credentials: true`
-- `Access-Control-Allow-Headers: Content-Type, X-Fuckxter-Client`
-- `Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS`
-
-Session cookies use `Secure`, `HttpOnly`, and `SameSite=Lax`. Run the Worker
-locally with:
-
-```bash
-pnpm api:migrate:local
-pnpm api:dev
-```
-
-Local development reads `FUCKXTER_SECRET` from `.dev.vars`.
-
-Using an API subdomain such as `api.867678.xyz` is preferable to `workers.dev`,
-because browsers increasingly restrict requests from a different site. If the
-API must stay on `workers.dev`, authentication needs to switch from cookies to
-bearer tokens.
-
 ## ⚖️ LICENSE
 
-This web site and the 2rd project (moitools fuckxter and cyaks) aslo licensed under the [MoPL](https://867678.xyz/docs/mopl)
+This website and the MoITools and CyAks projects are licensed under the [MoPL](https://867678.xyz/docs/mopl)
 
 Included depends use theme license.
