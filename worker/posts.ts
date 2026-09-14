@@ -14,6 +14,8 @@ const POST_SELECT = `
     u.handle AS author_handle,
     u.name AS author_name,
     u.verified AS author_verified,
+    u.avatar_media_id AS author_avatar_media_id,
+    u.avatar_key AS author_avatar_key,
     (SELECT COUNT(*) FROM comments c
       WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS reply_count,
     (SELECT COUNT(*) FROM reposts rp WHERE rp.post_id = p.id) AS repost_count,
@@ -29,10 +31,37 @@ const POST_SELECT = `
     EXISTS(
       SELECT 1 FROM bookmarks vb
       WHERE vb.post_id = p.id AND vb.user_id = ?
-    ) AS saved
+    ) AS saved,
+    EXISTS(
+      SELECT 1 FROM follows vf
+      WHERE vf.follower_id = ? AND vf.followee_id = p.author_id
+    ) AS author_following
   FROM posts p
   JOIN users u ON u.id = p.author_id
 `;
+
+async function createPostId(env: Env): Promise<string> {
+  const result = await env.DB.prepare(
+    "INSERT INTO post_sequence DEFAULT VALUES",
+  ).run();
+  const sequence = result.meta?.last_row_id;
+  if (!sequence) {
+    throw new HttpError(
+      500,
+      "POST_SEQUENCE_FAILED",
+      "Failed to allocate a post sequence.",
+    );
+  }
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+  return `${timestamp}-${sequence}`;
+}
+
+function isPostIdConflict(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /UNIQUE constraint failed: posts\.(id|slug)/.test(error.message)
+  );
+}
 
 function encodeCursor(createdAt: string, id: string): string {
   return btoa(JSON.stringify([createdAt, id]))
@@ -60,7 +89,7 @@ function decodeCursor(cursor: string): [string, string] {
   }
 }
 
-function publicPost(row: PostRow) {
+function publicPost(row: PostRow, viewerId: string | null) {
   return {
     id: row.id,
     slug: row.slug,
@@ -69,6 +98,11 @@ function publicPost(row: PostRow) {
       name: row.author_name,
       handle: row.author_handle,
       verified: Boolean(row.author_verified),
+      avatarUrl: row.author_avatar_key
+        ? `/api/avatars/${encodeURIComponent(row.author_id)}`
+        : row.author_avatar_media_id
+          ? `/api/media/${encodeURIComponent(row.author_avatar_media_id)}`
+          : null,
     },
     text: row.text,
     createdAt: row.created_at,
@@ -82,6 +116,8 @@ function publicPost(row: PostRow) {
       liked: Boolean(row.liked),
       reposted: Boolean(row.reposted),
       saved: Boolean(row.saved),
+      followingAuthor: Boolean(row.author_following),
+      isAuthor: viewerId === row.author_id,
     },
   };
 }
@@ -102,7 +138,7 @@ export async function getTimeline(
 ) {
   const viewer = viewerId ?? "";
   const limit = Math.min(Math.max(Number(limitValue ?? 10) || 10, 1), 30);
-  const params: unknown[] = [viewer, viewer, viewer];
+  const params: unknown[] = [viewer, viewer, viewer, viewer];
   const conditions = ["p.deleted_at IS NULL"];
 
   if (tab === "following") {
@@ -136,7 +172,7 @@ export async function getTimeline(
 
   return {
     tab: tab === "following" ? "following" : "foryou",
-    posts: pageRows.map(publicPost),
+    posts: pageRows.map((row) => publicPost(row, viewerId)),
     nextCursor: hasMore && last ? encodeCursor(last.created_at, last.id) : null,
   };
 }
@@ -149,9 +185,9 @@ export async function getPostById(
   const row = await env.DB.prepare(
     `${POST_SELECT} WHERE p.id = ? AND p.deleted_at IS NULL LIMIT 1`,
   )
-    .bind(viewerId ?? "", viewerId ?? "", viewerId ?? "", id)
+    .bind(viewerId ?? "", viewerId ?? "", viewerId ?? "", viewerId ?? "", id)
     .first<PostRow>();
-  return row ? publicPost(row) : null;
+  return row ? publicPost(row, viewerId) : null;
 }
 
 export async function getPostByPath(
@@ -170,11 +206,12 @@ export async function getPostByPath(
       viewerId ?? "",
       viewerId ?? "",
       viewerId ?? "",
+      viewerId ?? "",
       slug,
       usernameKey(handle),
     )
     .first<PostRow>();
-  return row ? publicPost(row) : null;
+  return row ? publicPost(row, viewerId) : null;
 }
 
 export async function getPostsByUser(
@@ -188,9 +225,15 @@ export async function getPostsByUser(
        WHERE u.handle_key = ? AND p.deleted_at IS NULL
        ORDER BY p.created_at DESC, p.id DESC
        LIMIT 100`,
-    ).bind(viewerId ?? "", viewerId ?? "", viewerId ?? "", usernameKey(handle)),
+    ).bind(
+      viewerId ?? "",
+      viewerId ?? "",
+      viewerId ?? "",
+      viewerId ?? "",
+      usernameKey(handle),
+    ),
   );
-  return rows.map(publicPost);
+  return rows.map((row) => publicPost(row, viewerId));
 }
 
 export async function createPost(
@@ -209,8 +252,6 @@ export async function createPost(
       "Post cannot exceed 500 characters.",
     );
   }
-  const id = randomId();
-  const slug = `${Date.now().toString(36)}-${id.slice(0, 8)}`;
   const now = new Date().toISOString();
   let mediaJson: string | null = null;
   if (mediaId) {
@@ -241,14 +282,23 @@ export async function createPost(
       byteSize: Number(media.byte_size),
     });
   }
-  await env.DB.prepare(
-    `INSERT INTO posts (
-       id, slug, author_id, text, media_json, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  )
-    .bind(id, slug, authorId, cleanText, mediaJson, now, now)
-    .run();
-  return getPostById(env, authorId, id);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const id = await createPostId(env);
+    try {
+      await env.DB.prepare(
+        `INSERT INTO posts (
+           id, slug, author_id, text, media_json, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+        .bind(id, id, authorId, cleanText, mediaJson, now, now)
+        .run();
+      return getPostById(env, authorId, id);
+    } catch (error) {
+      if (!isPostIdConflict(error) || attempt === 4) throw error;
+    }
+  }
+
+  throw new HttpError(500, "POST_ID_FAILED", "Failed to create a post ID.");
 }
 
 export async function updatePost(
@@ -383,9 +433,9 @@ export async function getSavedPosts(env: Env, userId: string) {
        WHERE saved.user_id = ? AND p.deleted_at IS NULL
        ORDER BY saved.created_at DESC
        LIMIT 200`,
-    ).bind(userId, userId, userId, userId),
+    ).bind(userId, userId, userId, userId, userId),
   );
-  return rows.map(publicPost);
+  return rows.map((row) => publicPost(row, userId));
 }
 
 export async function setSaved(
@@ -437,12 +487,13 @@ export async function searchPosts(
       viewerId ?? "",
       viewerId ?? "",
       viewerId ?? "",
+      viewerId ?? "",
       pattern,
       pattern,
       pattern,
     ),
   );
-  return { query, posts: rows.map(publicPost) };
+  return { query, posts: rows.map((row) => publicPost(row, viewerId)) };
 }
 
 export async function getComments(env: Env, postId: string) {
@@ -454,7 +505,9 @@ export async function getComments(env: Env, postId: string) {
        u.id AS author_id,
        u.name AS author_name,
        u.handle AS author_handle,
-       u.verified AS author_verified
+       u.verified AS author_verified,
+       u.avatar_media_id AS author_avatar_media_id,
+       u.avatar_key AS author_avatar_key
      FROM comments c
      JOIN users u ON u.id = c.author_id
      WHERE c.post_id = ? AND c.deleted_at IS NULL
@@ -470,6 +523,8 @@ export async function getComments(env: Env, postId: string) {
       author_name: string;
       author_handle: string;
       author_verified: number;
+      author_avatar_media_id: string | null;
+      author_avatar_key: string | null;
     }>();
 
   return (result.results ?? []).map((row) => ({
@@ -479,6 +534,11 @@ export async function getComments(env: Env, postId: string) {
       name: row.author_name,
       handle: row.author_handle,
       verified: Boolean(row.author_verified),
+      avatarUrl: row.author_avatar_key
+        ? `/api/avatars/${encodeURIComponent(row.author_id)}`
+        : row.author_avatar_media_id
+          ? `/api/media/${encodeURIComponent(row.author_avatar_media_id)}`
+          : null,
     },
     text: row.text,
     createdAt: row.created_at,
@@ -519,7 +579,8 @@ export async function createComment(
     .run();
 
   const user = await env.DB.prepare(
-    "SELECT id, name, handle, verified FROM users WHERE id = ?",
+    `SELECT id, name, handle, verified, avatar_media_id, avatar_key
+     FROM users WHERE id = ?`,
   )
     .bind(userId)
     .first<{
@@ -527,6 +588,8 @@ export async function createComment(
       name: string;
       handle: string;
       verified: number;
+      avatar_media_id: string | null;
+      avatar_key: string | null;
     }>();
   if (!user)
     throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
@@ -538,6 +601,11 @@ export async function createComment(
       name: user.name,
       handle: user.handle,
       verified: Boolean(user.verified),
+      avatarUrl: user.avatar_key
+        ? `/api/avatars/${encodeURIComponent(user.id)}`
+        : user.avatar_media_id
+          ? `/api/media/${encodeURIComponent(user.avatar_media_id)}`
+          : null,
     },
     text: cleanText,
     createdAt: now,

@@ -2,31 +2,12 @@
 import "../../../styles/fuckxter/style.css";
 
 import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
+import FuckxterSubpageHeader from "../../../components/FuckxterSubpageHeader.astro";
 ---
 
 <FuckxterLayout title="详情">
   <div class="fk-app fk-subpage" data-fk-post>
-    <header class="fk-topbar">
-      <a class="fk-brand" href="/fuckxter" aria-label="返回 FuckXter 首页">
-        <img
-          class="fk-logo-img fk-logo-light"
-          src="/FuckXter.avif"
-          alt="FuckXter"
-          width="499"
-          height="128"
-          decoding="async"
-        />
-        <img
-          class="fk-logo-img fk-logo-dark"
-          src="/FuckXter_BK.avif"
-          alt="FuckXter"
-          width="515"
-          height="128"
-          decoding="async"
-        />
-      </a>
-      <button type="button" class="fk-back-btn" data-role="back">← 返回</button>
-    </header>
+    <FuckxterSubpageHeader />
 
     <div class="fk-post-layout">
       <div class="fk-post-main">
@@ -45,20 +26,29 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
     createComment,
     getComments,
     getPostByPath,
+    setFollow,
     toggleLike,
     toggleRepost,
   } from "../../../lib/fuckxter/api";
-  import { getAccount, hydrateSession } from "../../../lib/fuckxter/auth";
+  import {
+    getAccount,
+    hydrateSession,
+    requestAuthentication,
+  } from "../../../lib/fuckxter/auth";
   import {
     actionButton,
     authorAvatar,
     el,
+    followButton,
     fmtCount,
     ICONS,
     renderPostDetail,
+    setFollowButtonState,
     statusRow,
   } from "../../../lib/fuckxter/dom";
+  import { ApiError } from "../../../lib/fuckxter/http";
   import { onFuckxterPageReady } from "../../../lib/fuckxter/page";
+  import { sharePost } from "../../../lib/fuckxter/share";
   import type { Comment, Post } from "../../../lib/fuckxter/types";
   import {
     parsePostPath,
@@ -77,14 +67,19 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
     const title = el("summary", "fk-post-info-title");
     title.textContent = "详情";
     const author = el("div", "fk-post-info-author");
-    const avatar = authorAvatar(post.author.handle, post.author.name);
+    const avatar = authorAvatar(
+      post.author.handle,
+      post.author.name,
+      "fk-avatar",
+      post.author.avatarUrl,
+    );
     const who = el("div");
     const name = el("strong");
     name.textContent = post.author.name;
     const handle = el("small");
     handle.textContent = `@${post.author.handle}`;
     who.append(name, handle);
-    author.append(avatar, who);
+    author.append(avatar, who, followButton(post));
 
     const rows = el("dl", "fk-post-info-rows");
     const row = (label: string, value: string) => {
@@ -112,6 +107,8 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
       actionButton("reply", ICONS.reply, "回复", post.stats.replies),
       actionButton("repost", ICONS.repost, "转发", post.stats.reposts),
       actionButton("like", ICONS.heart, "喜欢", post.stats.likes),
+      actionButton("share", ICONS.share, "分享", 0),
+      actionButton("copy", ICONS.copy, "复制链接", 0),
     );
 
     const repostBtn = actions.querySelector<HTMLButtonElement>(
@@ -167,6 +164,17 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
         }
         return;
       }
+
+      if (action === "share" || action === "copy") {
+        const originalTitle = btn.title;
+        try {
+          const result = await sharePost(post, action === "copy");
+          btn.title = result === "copied" ? "已复制链接" : "已分享";
+          setTimeout(() => {
+            btn.title = originalTitle;
+          }, 1200);
+        } catch {}
+      }
     });
 
     box.append(title, actions);
@@ -197,7 +205,12 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
             ]
           : comments.map((c) => {
               const item = el("div", "fk-comment");
-              const avatar = authorAvatar(c.author.handle, c.author.name);
+              const avatar = authorAvatar(
+                c.author.handle,
+                c.author.name,
+                "fk-avatar",
+                c.author.avatarUrl,
+              );
               const body = el("div", "fk-comment-body");
               const head = el("header", "fk-comment-head");
               const name = el("strong");
@@ -272,9 +285,29 @@ import FuckxterLayout from "../../../layouts/FuckxterLayout.astro";
 
     const layout = container.querySelector<HTMLElement>(".fk-post-layout")!;
     layout.addEventListener("click", (event) => {
-      const avatarLink = (event.target as HTMLElement).closest<HTMLElement>(
-        ".fk-avatar-link",
-      );
+      const target = event.target as HTMLElement;
+      const follow = target.closest<HTMLButtonElement>(".fk-follow-btn");
+      if (follow?.dataset.handle) {
+        if (!getAccount()) {
+          requestAuthentication();
+          return;
+        }
+        follow.disabled = true;
+        const following = follow.dataset.following !== "true";
+        void setFollow(follow.dataset.handle, following)
+          .then((result) => setFollowButtonState(follow, result.following))
+          .catch((error: unknown) => {
+            if (error instanceof ApiError && error.status === 401) {
+              requestAuthentication();
+            }
+          })
+          .finally(() => {
+            follow.disabled = false;
+          });
+        return;
+      }
+
+      const avatarLink = target.closest<HTMLElement>(".fk-avatar-link");
       if (avatarLink?.dataset.handle) {
         event.preventDefault();
         navigate(userPath(avatarLink.dataset.handle));

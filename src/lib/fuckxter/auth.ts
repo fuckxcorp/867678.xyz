@@ -18,12 +18,15 @@ export interface Account {
 }
 
 export interface S3Config {
+  id?: string;
+  name?: string;
   endpoint: string;
   region: string;
   bucket: string;
   accessKeyId: string;
   secretAccessKey: string;
   pathStyle: boolean;
+  isDefault?: boolean;
 }
 
 interface AccountResponse {
@@ -31,8 +34,33 @@ interface AccountResponse {
 }
 
 export const AUTH_REQUIRED_EVENT = "fk:auth-required";
+const ACCOUNT_CACHE_KEY = "fk-account-cache";
+const ACCOUNT_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
-let account: Account | null = null;
+function readCachedAccount(): Account | null {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as {
+      savedAt?: number;
+      account?: Account;
+    };
+    if (
+      !cached.savedAt ||
+      Date.now() - cached.savedAt > ACCOUNT_CACHE_TTL ||
+      !cached.account?.profile?.handle
+    ) {
+      localStorage.removeItem(ACCOUNT_CACHE_KEY);
+      return null;
+    }
+    return normalizeAccount(cached.account);
+  } catch {
+    localStorage.removeItem(ACCOUNT_CACHE_KEY);
+    return null;
+  }
+}
+
+let account: Account | null = readCachedAccount();
 let sessionPromise: Promise<Account | null> | null = null;
 
 function normalizeAccount(value: Account): Account {
@@ -49,6 +77,14 @@ export function getAccount(): Account | null {
 
 function setAccount(next: Account | null): void {
   account = next;
+  if (next) {
+    localStorage.setItem(
+      ACCOUNT_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), account: next }),
+    );
+  } else {
+    localStorage.removeItem(ACCOUNT_CACHE_KEY);
+  }
 }
 
 export function hydrateSession(force = false): Promise<Account | null> {
@@ -62,6 +98,7 @@ export function hydrateSession(force = false): Promise<Account | null> {
     .catch((error: unknown) => {
       if (!(error instanceof ApiError) || error.status !== 401) {
         console.error("FuckXter session bootstrap failed", error);
+        return account;
       }
       setAccount(null);
       return null;
@@ -183,19 +220,32 @@ export async function generateRecoveryCodes(): Promise<{
   return response;
 }
 
-export async function getS3Config(): Promise<S3Config | null> {
-  const response = await apiRequest<{ config: S3Config | null }>(
+export async function getS3Configs(): Promise<{
+  configs: S3Config[];
+  defaultId: string | null;
+}> {
+  return apiRequest<{ configs: S3Config[]; defaultId: string | null }>(
     "/api/me/storage",
+  );
+}
+
+export async function saveS3Config(config: S3Config): Promise<S3Config> {
+  const response = await apiRequest<{ config: S3Config }>(
+    config.id
+      ? `/api/me/storage/${encodeURIComponent(config.id)}`
+      : "/api/me/storage",
+    {
+      method: config.id ? "PUT" : "POST",
+      body: JSON.stringify(config),
+    },
   );
   return response.config;
 }
 
-export async function saveS3Config(config: S3Config): Promise<S3Config> {
-  const response = await apiRequest<{ config: S3Config }>("/api/me/storage", {
-    method: "PUT",
-    body: JSON.stringify(config),
+export async function deleteS3Config(id: string): Promise<void> {
+  await apiRequest(`/api/me/storage/${encodeURIComponent(id)}`, {
+    method: "DELETE",
   });
-  return response.config;
 }
 
 export async function testS3Connection(config: S3Config): Promise<string> {

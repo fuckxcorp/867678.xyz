@@ -24,22 +24,42 @@ export function apiEndpoint(path: string): string {
   return `${FUCKXTER_API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export async function apiRequest<T>(
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
+async function performRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
-  headers.set("X-Fuckxter-Client", "web");
   if (typeof options.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(apiEndpoint(path), {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  const timeout = AbortSignal.timeout(
+    options.method === "GET" ? 15_000 : 30_000,
+  );
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, timeout])
+    : timeout;
+  let response: Response;
+  try {
+    response = await fetch(apiEndpoint(path), {
+      ...options,
+      headers,
+      credentials: "include",
+      signal,
+    });
+  } catch (error) {
+    if (timeout.aborted) {
+      throw new ApiError(
+        "Request timed out. Please try again.",
+        408,
+        "TIMEOUT",
+      );
+    }
+    throw error;
+  }
 
   if (response.status === 204) return undefined as T;
 
@@ -63,4 +83,26 @@ export async function apiRequest<T>(
   }
 
   return body as T;
+}
+
+export function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const method = (options.method ?? "GET").toUpperCase();
+  const key = `${method}:${path}`;
+  if (method === "GET") {
+    const existing = inFlightRequests.get(key);
+    if (existing) return existing as Promise<T>;
+  }
+
+  const request = performRequest<T>(path, options);
+  if (method !== "GET") return request;
+
+  inFlightRequests.set(key, request);
+  const clear = () => {
+    if (inFlightRequests.get(key) === request) inFlightRequests.delete(key);
+  };
+  void request.then(clear, clear);
+  return request;
 }

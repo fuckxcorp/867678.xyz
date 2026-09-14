@@ -65,17 +65,16 @@ export function mountProfileSettings(
       account.profile.birthday;
     setStatus(profileStatus, "");
     avatar.setAttribute("style", avatarGradient(account.profile.handle));
-    avatar.textContent = [...account.profile.name][0] ?? "?";
     avatarRemove.hidden = !account.avatarUrl;
-    if (account.avatarUrl) {
-      const image = document.createElement("img");
-      image.className = "fk-profile-avatar-image";
-      image.src = account.avatarUrl.startsWith("/")
+    const image = document.createElement("img");
+    image.className = "fk-profile-avatar-image";
+    image.src = account.avatarUrl
+      ? account.avatarUrl.startsWith("/")
         ? apiEndpoint(account.avatarUrl)
-        : account.avatarUrl;
-      image.alt = account.profile.name;
-      avatar.replaceChildren(image);
-    }
+        : account.avatarUrl
+      : "/user.webp";
+    image.alt = account.profile.name;
+    avatar.replaceChildren(image);
   };
 
   const refreshAccount = async () => {

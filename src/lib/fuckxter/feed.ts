@@ -3,14 +3,23 @@ import {
   createPost,
   getTimeline,
   searchPosts,
+  setFollow,
   toggleLike,
   toggleRepost,
   toggleSave,
   uploadMedia,
 } from "./api";
 import { getAccount, requestAuthentication, toFeedUser } from "./auth";
-import { avatarGradient, el, fmtCount, renderPost, statusRow } from "./dom";
-import { ApiError } from "./http";
+import {
+  avatarGradient,
+  el,
+  fmtCount,
+  renderPost,
+  setFollowButtonState,
+  statusRow,
+} from "./dom";
+import { ApiError, apiEndpoint } from "./http";
+import { sharePost } from "./share";
 import type { FeedTab, Post, PostMedia, SearchResult } from "./types";
 import { postPath, userPath } from "./urls";
 
@@ -99,8 +108,16 @@ export function mountFeed(container: HTMLElement): FeedControls {
     const account = getAccount();
     const me = toFeedUser(account);
     composerAvatar.setAttribute("style", avatarGradient(me.handle));
-    composerAvatar.textContent = [...me.name][0] ?? "?";
     composerAvatar.title = `@${me.handle}`;
+    const image = document.createElement("img");
+    image.className = "fk-avatar-image";
+    image.src = account?.avatarUrl
+      ? account.avatarUrl.startsWith("/")
+        ? apiEndpoint(account.avatarUrl)
+        : account.avatarUrl
+      : "/user.webp";
+    image.alt = me.name;
+    composerAvatar.replaceChildren(image);
     composerAuthHint.hidden = Boolean(account);
     composerBtn.textContent = account ? "发帖" : "注册后发帖";
     composerInput.placeholder = account ? "有什么新鲜事？" : "注册后才能发帖";
@@ -334,6 +351,27 @@ export function mountFeed(container: HTMLElement): FeedControls {
       return;
     }
 
+    const followButton = target.closest<HTMLButtonElement>(".fk-follow-btn");
+    if (followButton?.dataset.handle) {
+      if (!getAccount()) {
+        requestAuthentication();
+        return;
+      }
+      followButton.disabled = true;
+      const following = followButton.dataset.following !== "true";
+      try {
+        const result = await setFollow(followButton.dataset.handle, following);
+        setFollowButtonState(followButton, result.following);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          requestAuthentication();
+        }
+      } finally {
+        followButton.disabled = false;
+      }
+      return;
+    }
+
     const button = target.closest<HTMLButtonElement>(".fk-action");
     if (!button) {
       const article = target.closest<HTMLElement>(".fk-post");
@@ -405,14 +443,13 @@ export function mountFeed(container: HTMLElement): FeedControls {
       return;
     }
 
-    if (action === "share") {
+    if (action === "share" || action === "copy") {
+      const originalTitle = button.title;
       try {
-        await navigator.clipboard.writeText(
-          `${location.origin}${postPath(post)}`,
-        );
-        button.title = "已复制链接";
+        const result = await sharePost(post, action === "copy");
+        button.title = result === "copied" ? "已复制链接" : "已分享";
         setTimeout(() => {
-          button.title = "分享";
+          button.title = originalTitle;
         }, 1200);
       } catch {}
     }

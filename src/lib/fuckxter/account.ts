@@ -91,26 +91,23 @@ export function mountAccountControls(
 
   const renderAccountUI = () => {
     if (account) {
-      const initial = [...account.profile.name][0] ?? "?";
       accountAvatar.hidden = false;
       accountIcon.setAttribute("style", "display:none");
       accountAvatar.setAttribute(
         "style",
         avatarGradient(account.profile.handle),
       );
-      accountAvatar.textContent = initial;
       menuAvatar.setAttribute("style", avatarGradient(account.profile.handle));
-      menuAvatar.textContent = initial;
-      if (account.avatarUrl) {
-        for (const element of [accountAvatar, menuAvatar]) {
-          const image = document.createElement("img");
-          image.className = "fk-account-image";
-          image.src = account.avatarUrl!.startsWith("/")
-            ? apiEndpoint(account.avatarUrl!)
-            : account.avatarUrl!;
-          image.alt = "";
-          element.replaceChildren(image);
-        }
+      for (const element of [accountAvatar, menuAvatar]) {
+        const image = document.createElement("img");
+        image.className = "fk-account-image";
+        image.src = account.avatarUrl
+          ? account.avatarUrl.startsWith("/")
+            ? apiEndpoint(account.avatarUrl)
+            : account.avatarUrl
+          : "/user.webp";
+        image.alt = "";
+        element.replaceChildren(image);
       }
       menuName.textContent = account.profile.name;
       menuHandle.textContent = `@${account.profile.handle}`;

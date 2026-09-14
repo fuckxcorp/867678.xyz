@@ -417,6 +417,17 @@
   transition: border-color 150ms ease;
 }
 
+.fk-storage-select {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-strong);
+  font: inherit;
+}
+
 .fk-field input:focus,
 .fk-field select:focus,
 .fk-field textarea:focus {
@@ -764,6 +775,7 @@
 }
 
 .fk-avatar {
+  box-sizing: border-box;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -773,7 +785,14 @@
   color: #fff;
   font-size: 1rem;
   font-weight: 700;
+  overflow: hidden;
   user-select: none;
+}
+
+.fk-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .fk-verified {
@@ -997,6 +1016,36 @@
   color: var(--color-text-muted);
   font-size: 0.88rem;
   white-space: nowrap;
+}
+
+.fk-follow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.fk-follow-btn[hidden] {
+  display: none;
+}
+
+.fk-follow-btn:hover:not(:disabled),
+.fk-follow-btn.is-following {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.fk-follow-btn:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .fk-post-text {
@@ -1451,7 +1500,7 @@
 
 .fk-post-control-actions .fk-action {
   justify-content: center;
-  flex: 1 1 0;
+  flex: 1 1 calc(33.333% - 0.34rem);
   width: auto;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--color-border-soft);

@@ -36,7 +36,11 @@ import {
   getOptionalUser,
   requireUser,
 } from "./security";
-import { getStorageConfig, saveStorageConfig } from "./storage";
+import {
+  deleteStorageConfig,
+  getStorageConfigs,
+  saveStorageConfig,
+} from "./storage";
 import { clearAvatar, getUserProfile, setFollow } from "./users";
 
 function withCookie(response: Response, cookie: string): Response {
@@ -256,13 +260,17 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
 
     if (parts[2] === "storage" && parts.length === 3) {
       if (method === "GET") {
+        const configs = await getStorageConfigs(env, user.id);
         return json(
-          { config: await getStorageConfig(env, user.id) },
+          {
+            configs,
+            defaultId: configs.find((config) => config.isDefault)?.id ?? null,
+          },
           request,
           env,
         );
       }
-      if (method === "PUT") {
+      if (method === "POST") {
         const body = await readJson<Record<string, unknown>>(request);
         return json(
           {
@@ -273,11 +281,42 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
               accessKeyId: String(body.accessKeyId ?? ""),
               secretAccessKey: String(body.secretAccessKey ?? ""),
               pathStyle: Boolean(body.pathStyle),
+              name: String(body.name ?? ""),
+              isDefault: Boolean(body.isDefault),
+            }),
+          },
+          request,
+          env,
+          { status: 201 },
+        );
+      }
+    }
+
+    if (parts[2] === "storage" && parts.length === 4) {
+      const configId = segment(parts, 3);
+      if (method === "PUT") {
+        const body = await readJson<Record<string, unknown>>(request);
+        return json(
+          {
+            config: await saveStorageConfig(env, user.id, {
+              id: configId,
+              endpoint: String(body.endpoint ?? ""),
+              region: String(body.region ?? ""),
+              bucket: String(body.bucket ?? ""),
+              accessKeyId: String(body.accessKeyId ?? ""),
+              secretAccessKey: String(body.secretAccessKey ?? ""),
+              pathStyle: Boolean(body.pathStyle),
+              name: String(body.name ?? ""),
+              isDefault: Boolean(body.isDefault),
             }),
           },
           request,
           env,
         );
+      }
+      if (method === "DELETE") {
+        await deleteStorageConfig(env, user.id, configId);
+        return json({ ok: true }, request, env);
       }
     }
 

@@ -10,6 +10,7 @@ export const ICONS = {
     '<svg class="fk-action-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
   share:
     '<svg class="fk-action-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M16 6l-4-4-4 4"></path><path d="M12 2v13"></path></svg>',
+  copy: '<svg class="fk-action-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>',
   bookmark:
     '<svg class="fk-action-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>',
   verified:
@@ -77,6 +78,24 @@ export function actionButton(
   return btn;
 }
 
+export function followButton(post: Post): HTMLButtonElement {
+  const button = el("button", "fk-follow-btn");
+  button.type = "button";
+  button.dataset.handle = post.author.handle;
+  button.hidden = Boolean(post.viewer?.isAuthor);
+  setFollowButtonState(button, Boolean(post.viewer?.followingAuthor));
+  return button;
+}
+
+export function setFollowButtonState(
+  button: HTMLButtonElement,
+  following: boolean,
+): void {
+  button.dataset.following = String(following);
+  button.textContent = following ? "已关注" : "关注";
+  button.classList.toggle("is-following", following);
+}
+
 export function postHead(post: Post, timeMode: "relative" | "absolute") {
   const head = el("header", "fk-post-head");
   const name = el("span", "fk-post-name");
@@ -91,6 +110,7 @@ export function postHead(post: Post, timeMode: "relative" | "absolute") {
       : new Date(post.createdAt).toLocaleString("zh-CN")
   }`;
   head.append(meta);
+  head.append(followButton(post));
   return head;
 }
 
@@ -112,12 +132,21 @@ export function authorAvatar(
   handle: string,
   name: string,
   className = "fk-avatar",
+  avatarUrl?: string | null,
 ): HTMLAnchorElement {
   const avatar = el("a", `${className} fk-avatar-link`);
   avatar.dataset.handle = handle;
   avatar.href = `/fuckxter/user/${encodeURIComponent(handle)}`;
   avatar.setAttribute("style", avatarGradient(handle));
-  avatar.textContent = [...name][0] ?? "?";
+  const image = el("img", "fk-avatar-image");
+  image.src =
+    avatarUrl && avatarUrl.startsWith("/")
+      ? apiEndpoint(avatarUrl)
+      : avatarUrl || "/user.webp";
+  image.alt = name;
+  image.loading = "lazy";
+  image.decoding = "async";
+  avatar.append(image);
   avatar.title = `查看 @${handle} 的主页`;
   avatar.setAttribute("aria-label", `查看 ${name}（@${handle}）的主页`);
   return avatar;
@@ -128,7 +157,12 @@ export function renderPost(post: Post): HTMLElement {
   article.dataset.postId = post.id;
   article.dataset.handle = post.author.handle;
 
-  const avatar = authorAvatar(post.author.handle, post.author.name);
+  const avatar = authorAvatar(
+    post.author.handle,
+    post.author.name,
+    "fk-avatar",
+    post.author.avatarUrl,
+  );
 
   const body = el("div", "fk-post-body");
   body.append(postHead(post, "relative"));
@@ -146,6 +180,7 @@ export function renderPost(post: Post): HTMLElement {
     actionButton("like", ICONS.heart, "喜欢", post.stats.likes),
     actionButton("save", ICONS.bookmark, "收藏", 0),
     actionButton("share", ICONS.share, "分享", 0),
+    actionButton("copy", ICONS.copy, "复制链接", 0),
   );
   if (post.viewer?.reposted) {
     actions.children[1].classList.add("is-reposted");

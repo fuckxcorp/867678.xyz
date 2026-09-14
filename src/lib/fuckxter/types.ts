@@ -11,6 +11,7 @@ export interface FeedUser {
   /** 不带 @ 前缀 */
   handle: string;
   verified?: boolean;
+  avatarUrl?: string | null;
 }
 
 export interface PostStats {
@@ -41,6 +42,8 @@ export interface Post {
     liked: boolean;
     reposted: boolean;
     saved: boolean;
+    followingAuthor?: boolean;
+    isAuthor?: boolean;
   };
 }
 

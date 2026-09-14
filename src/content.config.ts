@@ -41,7 +41,7 @@ const PROJECTS: RemoteEntry[] = [
   {
     id: "omio",
     title: "older mio protocol",
-    url: "https://cdn.jsdelivr.net/gh/orgmio/omio@main/README.md",
+    url: "https://cdn.jsdelivr.net/gh/orgmio/mio@omio/README.md",
   },
   {
     id: "luci-app-oplist",

@@ -1,6 +1,7 @@
 import { navigate } from "astro:transitions/client";
 import { getSavedPosts, toggleSave } from "../api";
 import { avatarGradient, el, relativeTime } from "../dom";
+import { apiEndpoint } from "../http";
 import type { Post } from "../types";
 import { postPath } from "../urls";
 
@@ -23,7 +24,14 @@ export function mountSavedSettings(root: HTMLElement): void {
           item.dataset.postId = post.id;
           const avatar = el("div", "fk-avatar");
           avatar.setAttribute("style", avatarGradient(post.author.handle));
-          avatar.textContent = [...post.author.name][0] ?? "?";
+          const avatarImage = el("img", "fk-avatar-image");
+          avatarImage.src = post.author.avatarUrl
+            ? post.author.avatarUrl.startsWith("/")
+              ? apiEndpoint(post.author.avatarUrl)
+              : post.author.avatarUrl
+            : "/user.webp";
+          avatarImage.alt = post.author.name;
+          avatar.append(avatarImage);
           const body = el("div", "fk-post-body");
           const head = el("header", "fk-post-head");
           const name = el("span", "fk-post-name");

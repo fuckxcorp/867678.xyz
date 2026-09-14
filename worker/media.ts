@@ -145,13 +145,14 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
   const now = new Date().toISOString();
   await env.DB.prepare(
     `INSERT INTO media_objects (
-       id, owner_id, object_key, original_name, content_type,
+       id, owner_id, storage_config_id, object_key, original_name, content_type,
        sha256, byte_size, status, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ready', ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ready', ?, ?)`,
   )
     .bind(
       id,
       userId,
+      config.id ?? null,
       objectKey,
       originalName,
       contentType,
@@ -165,6 +166,7 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
   return mediaJson({
     id,
     owner_id: userId,
+    storage_config_id: config.id ?? null,
     object_key: objectKey,
     original_name: originalName,
     content_type: contentType,
@@ -263,7 +265,11 @@ export async function getMedia(
     };
   }
 
-  const config = await getStorageConfig(env, row.owner_id);
+  const config = await getStorageConfig(
+    env,
+    row.owner_id,
+    row.storage_config_id ?? undefined,
+  );
   if (!config) {
     throw new HttpError(
       502,

@@ -7,6 +7,7 @@ export interface D1RunResult {
   success: boolean;
   meta?: {
     changes?: number;
+    last_row_id?: number;
   };
 }
 
@@ -89,17 +90,21 @@ export interface PostRow {
   author_handle: string;
   author_name: string;
   author_verified: number;
+  author_avatar_media_id: string | null;
+  author_avatar_key: string | null;
   reply_count: number;
   repost_count: number;
   like_count: number;
   liked: number;
   reposted: number;
   saved: number;
+  author_following: number;
 }
 
 export interface MediaRow {
   id: string;
   owner_id: string;
+  storage_config_id: string | null;
   object_key: string;
   original_name: string;
   content_type: string;

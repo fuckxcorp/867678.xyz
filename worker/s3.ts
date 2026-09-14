@@ -1,12 +1,15 @@
 import { HttpError } from "./http";
 
 export interface S3Config {
+  id?: string;
+  name?: string;
   endpoint?: string;
   region?: string;
   bucket?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
   pathStyle?: boolean;
+  isDefault?: boolean;
 }
 
 function hex(bytes: ArrayBuffer): string {
