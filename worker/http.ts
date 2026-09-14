@@ -38,7 +38,7 @@ export function corsHeaders(request: Request, env: Env): Headers {
     headers.set("Access-Control-Allow-Credentials", "true");
     headers.set(
       "Access-Control-Allow-Headers",
-      "Content-Type, X-Fuckxter-Client",
+      "Content-Type, X-Fuckxter-Client, X-File-Name",
     );
     headers.set(
       "Access-Control-Allow-Methods",

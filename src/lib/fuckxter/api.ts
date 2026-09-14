@@ -1,4 +1,4 @@
-import { ApiError, apiRequest } from "./http";
+import { ApiError, apiEndpoint, apiRequest } from "./http";
 import type {
   Comment,
   FeedPage,
@@ -40,7 +40,7 @@ export async function uploadMedia(file: File): Promise<PostMedia> {
     method: "POST",
     headers: {
       "Content-Type": file.type,
-      "X-File-Name": file.name,
+      "X-File-Name": encodeURIComponent(file.name),
     },
     body: file,
   });
@@ -142,14 +142,50 @@ export function setFollow(
   });
 }
 
-export async function uploadAvatar(file: File): Promise<void> {
-  await apiRequest("/api/me/avatar", {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type,
-      "X-File-Name": file.name,
-    },
-    body: file,
+export function uploadAvatar(
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", apiEndpoint("/api/me/avatar"));
+    request.withCredentials = true;
+    request.setRequestHeader("Accept", "application/json");
+    request.setRequestHeader("Content-Type", file.type);
+    request.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+    request.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable || !onProgress) return;
+      onProgress(Math.round((event.loaded / event.total) * 100));
+    });
+    request.addEventListener("load", () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve();
+        return;
+      }
+      let body: {
+        error?: { code?: string; message?: string };
+        message?: string;
+      } = {};
+      try {
+        body = JSON.parse(request.responseText) as typeof body;
+      } catch {}
+      reject(
+        new ApiError(
+          body.error?.message ??
+            body.message ??
+            `请求失败（${request.status}）`,
+          request.status,
+          body.error?.code,
+        ),
+      );
+    });
+    request.addEventListener("error", () => {
+      reject(new ApiError("头像上传失败，请检查网络后重试。", 0, "NETWORK"));
+    });
+    request.addEventListener("abort", () => {
+      reject(new ApiError("头像上传已取消。", 0, "ABORTED"));
+    });
+    request.send(file);
   });
 }
 

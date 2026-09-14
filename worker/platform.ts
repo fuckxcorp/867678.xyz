@@ -92,6 +92,7 @@ export interface PostRow {
   author_verified: number;
   author_avatar_media_id: string | null;
   author_avatar_key: string | null;
+  author_updated_at: string;
   reply_count: number;
   repost_count: number;
   like_count: number;

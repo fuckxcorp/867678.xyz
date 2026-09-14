@@ -1,6 +1,7 @@
 import { HttpError } from "./http";
 import type { Env } from "./platform";
 import { usernameKey } from "./usernames";
+import { buildAvatarUrl } from "./avatar";
 
 interface ProfileRow {
   id: string;
@@ -12,6 +13,7 @@ interface ProfileRow {
   gender: string;
   birthday: string;
   created_at: string;
+  updated_at: string;
   avatar_media_id: string | null;
   avatar_key: string | null;
   post_count: number;
@@ -31,11 +33,12 @@ function publicProfile(row: ProfileRow) {
     gender: row.gender,
     birthday: row.birthday,
     createdAt: row.created_at,
-    avatarUrl: row.avatar_key
-      ? `/api/avatars/${encodeURIComponent(row.id)}`
-      : row.avatar_media_id
-        ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
-        : null,
+    avatarUrl: buildAvatarUrl({
+      handle: row.handle,
+      avatarKey: row.avatar_key,
+      avatarMediaId: row.avatar_media_id,
+      updatedAt: row.updated_at,
+    }),
     stats: {
       posts: Number(row.post_count),
       followers: Number(row.follower_count),
@@ -65,6 +68,7 @@ export async function getUserProfile(
        u.created_at,
        u.avatar_media_id,
        u.avatar_key,
+       u.updated_at,
        (SELECT COUNT(*) FROM posts p
          WHERE p.author_id = u.id AND p.deleted_at IS NULL) AS post_count,
        (SELECT COUNT(*) FROM follows f

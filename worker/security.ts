@@ -1,5 +1,6 @@
 import { HttpError } from "./http";
 import type { Env, SessionUserRow, UserRow } from "./platform";
+import { buildAvatarUrl } from "./avatar";
 
 const SESSION_COOKIE = "fk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -185,11 +186,12 @@ export function accountFromRow(
       gender: row.gender,
       birthday: row.birthday,
     },
-    avatarUrl: row.avatar_key
-      ? `/api/avatars/${encodeURIComponent(row.id)}`
-      : row.avatar_media_id
-        ? `/api/media/${encodeURIComponent(row.avatar_media_id)}`
-        : null,
+    avatarUrl: buildAvatarUrl({
+      handle: row.handle,
+      avatarKey: row.avatar_key,
+      avatarMediaId: row.avatar_media_id,
+      updatedAt: row.updated_at,
+    }),
     twoFactorEnabled: Boolean(row.two_factor_enabled),
     recoveryCodeCount: Number(row.recovery_code_count ?? 0),
     createdAt: row.created_at,

@@ -2,6 +2,7 @@ import { HttpError } from "./http";
 import type { D1PreparedStatement, Env, PostRow } from "./platform";
 import { randomId } from "./security";
 import { usernameKey } from "./usernames";
+import { buildAvatarUrl } from "./avatar";
 
 const POST_SELECT = `
   SELECT
@@ -16,6 +17,7 @@ const POST_SELECT = `
     u.verified AS author_verified,
     u.avatar_media_id AS author_avatar_media_id,
     u.avatar_key AS author_avatar_key,
+    u.updated_at AS author_updated_at,
     (SELECT COUNT(*) FROM comments c
       WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS reply_count,
     (SELECT COUNT(*) FROM reposts rp WHERE rp.post_id = p.id) AS repost_count,
@@ -98,11 +100,12 @@ function publicPost(row: PostRow, viewerId: string | null) {
       name: row.author_name,
       handle: row.author_handle,
       verified: Boolean(row.author_verified),
-      avatarUrl: row.author_avatar_key
-        ? `/api/avatars/${encodeURIComponent(row.author_id)}`
-        : row.author_avatar_media_id
-          ? `/api/media/${encodeURIComponent(row.author_avatar_media_id)}`
-          : null,
+      avatarUrl: buildAvatarUrl({
+        handle: row.author_handle,
+        avatarKey: row.author_avatar_key,
+        avatarMediaId: row.author_avatar_media_id,
+        updatedAt: row.author_updated_at,
+      }),
     },
     text: row.text,
     createdAt: row.created_at,
@@ -507,7 +510,8 @@ export async function getComments(env: Env, postId: string) {
        u.handle AS author_handle,
        u.verified AS author_verified,
        u.avatar_media_id AS author_avatar_media_id,
-       u.avatar_key AS author_avatar_key
+       u.avatar_key AS author_avatar_key,
+       u.updated_at AS author_updated_at
      FROM comments c
      JOIN users u ON u.id = c.author_id
      WHERE c.post_id = ? AND c.deleted_at IS NULL
@@ -525,6 +529,7 @@ export async function getComments(env: Env, postId: string) {
       author_verified: number;
       author_avatar_media_id: string | null;
       author_avatar_key: string | null;
+      author_updated_at: string;
     }>();
 
   return (result.results ?? []).map((row) => ({
@@ -534,11 +539,12 @@ export async function getComments(env: Env, postId: string) {
       name: row.author_name,
       handle: row.author_handle,
       verified: Boolean(row.author_verified),
-      avatarUrl: row.author_avatar_key
-        ? `/api/avatars/${encodeURIComponent(row.author_id)}`
-        : row.author_avatar_media_id
-          ? `/api/media/${encodeURIComponent(row.author_avatar_media_id)}`
-          : null,
+      avatarUrl: buildAvatarUrl({
+        handle: row.author_handle,
+        avatarKey: row.author_avatar_key,
+        avatarMediaId: row.author_avatar_media_id,
+        updatedAt: row.author_updated_at,
+      }),
     },
     text: row.text,
     createdAt: row.created_at,
@@ -579,7 +585,7 @@ export async function createComment(
     .run();
 
   const user = await env.DB.prepare(
-    `SELECT id, name, handle, verified, avatar_media_id, avatar_key
+    `SELECT id, name, handle, verified, avatar_media_id, avatar_key, updated_at
      FROM users WHERE id = ?`,
   )
     .bind(userId)
@@ -590,6 +596,7 @@ export async function createComment(
       verified: number;
       avatar_media_id: string | null;
       avatar_key: string | null;
+      updated_at: string;
     }>();
   if (!user)
     throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
@@ -601,11 +608,12 @@ export async function createComment(
       name: user.name,
       handle: user.handle,
       verified: Boolean(user.verified),
-      avatarUrl: user.avatar_key
-        ? `/api/avatars/${encodeURIComponent(user.id)}`
-        : user.avatar_media_id
-          ? `/api/media/${encodeURIComponent(user.avatar_media_id)}`
-          : null,
+      avatarUrl: buildAvatarUrl({
+        handle: user.handle,
+        avatarKey: user.avatar_key,
+        avatarMediaId: user.avatar_media_id,
+        updatedAt: user.updated_at,
+      }),
     },
     text: cleanText,
     createdAt: now,

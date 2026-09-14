@@ -134,7 +134,7 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
     if (parts.length === 2 && method === "POST") {
       const user = await requireUser(request, env);
       return json(
-        { media: await uploadMedia(request, env, user.id) },
+        { media: await uploadMedia(request, env, user.id, user.handle) },
         request,
         env,
         { status: 201 },
@@ -231,8 +231,9 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
       parts.length === 3 &&
       (method === "PUT" || method === "DELETE")
     ) {
-      if (method === "PUT") await uploadAvatar(request, env, user.id);
-      else await clearAvatar(env, user.id);
+      if (method === "PUT") {
+        await uploadAvatar(request, env, user.id, user.handle);
+      } else await clearAvatar(env, user.id);
       const updated = await requireUser(request, env);
       return json({ account: accountFromRow(updated) }, request, env);
     }

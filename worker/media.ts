@@ -1,8 +1,9 @@
 import { HttpError } from "./http";
 import type { Env, MediaRow } from "./platform";
 import { signedS3Request } from "./s3";
-import { randomId } from "./security";
+import { randomId, randomToken } from "./security";
 import { getStorageConfig } from "./storage";
+import { usernameKey } from "./usernames";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MEDIA = new Set([
@@ -54,7 +55,11 @@ function extensionFor(contentType: string): string {
 }
 
 function safeFileName(value: string | null): string {
-  const cleaned = (value ?? "image")
+  let decoded = value ?? "image";
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {}
+  const cleaned = decoded
     .replace(/[/\\\u0000-\u001f]/g, "")
     .trim()
     .slice(0, 120);
@@ -107,7 +112,12 @@ async function readImage(request: Request): Promise<{
   };
 }
 
-export async function uploadMedia(request: Request, env: Env, userId: string) {
+export async function uploadMedia(
+  request: Request,
+  env: Env,
+  userId: string,
+  handle: string,
+) {
   const { bytes, contentType, originalName } = await readImage(request);
 
   const config = await getStorageConfig(env, userId);
@@ -119,7 +129,7 @@ export async function uploadMedia(request: Request, env: Env, userId: string) {
     );
   }
 
-  const objectKey = `users/${userId}/media/${randomId()}.${extensionFor(contentType)}`;
+  const objectKey = `media/${handle}/${Date.now()}-${randomToken().slice(0, 8)}.${extensionFor(contentType)}`;
   const { response } = await signedS3Request(
     config,
     "PUT",
@@ -182,10 +192,10 @@ export async function uploadAvatar(
   request: Request,
   env: Env,
   userId: string,
+  handle: string,
 ): Promise<string> {
   const { bytes, contentType } = await readImage(request);
-  const sha256 = await sha256Hex(bytes);
-  const objectKey = `avatars/${userId}/${sha256}.${extensionFor(contentType)}`;
+  const objectKey = `avatars/${handle}/avatar.avif`;
   const current = await env.DB.prepare(
     "SELECT avatar_key FROM users WHERE id = ?",
   )
@@ -204,20 +214,22 @@ export async function uploadAvatar(
   if (current?.avatar_key && current.avatar_key !== objectKey) {
     await env.MEDIA_CACHE.delete(current.avatar_key);
   }
-  return `/api/avatars/${encodeURIComponent(userId)}`;
+  return `/api/avatars/${encodeURIComponent(handle)}`;
 }
 
 export async function getAvatar(
   env: Env,
-  userId: string,
+  handle: string,
 ): Promise<{
   body: ReadableStream;
   contentType: string;
   size: number;
   etag: string;
 }> {
-  const user = await env.DB.prepare("SELECT avatar_key FROM users WHERE id = ?")
-    .bind(userId)
+  const user = await env.DB.prepare(
+    "SELECT avatar_key FROM users WHERE handle_key = ?",
+  )
+    .bind(usernameKey(handle))
     .first<{ avatar_key: string | null }>();
   if (!user?.avatar_key) {
     throw new HttpError(404, "AVATAR_NOT_FOUND", "Avatar not found.");
