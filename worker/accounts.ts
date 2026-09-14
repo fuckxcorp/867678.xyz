@@ -1,5 +1,6 @@
 import { HttpError } from "./http";
 import type { Env, UserRow } from "./platform";
+import { moveAvatar } from "./media";
 import {
   accountFromRow,
   createPasswordHash,
@@ -7,6 +8,7 @@ import {
   encryptSecret,
   generateTotpSecret,
   randomId,
+  randomToken,
   randomRecoveryCode,
   recoverableCodeHash,
   verifyPassword,
@@ -48,7 +50,11 @@ function handleFromEmail(email: string): string {
   if (/^[a-z0-9_]{2,20}$/.test(base) && !RESERVED_HANDLES.has(base)) {
     return base;
   }
-  return `guest${randomId().replace(/-/g, "").slice(0, 8)}`;
+  const suffix = randomToken()
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 8)
+    .toLowerCase();
+  return `guest${suffix}`;
 }
 
 async function findUserByIdentifier(
@@ -57,7 +63,7 @@ async function findUserByIdentifier(
 ): Promise<UserRow | null> {
   const handleKey = identifier.includes("@") ? "" : usernameKey(identifier);
   return env.DB.prepare(
-    "SELECT * FROM users WHERE email = ? COLLATE NOCASE OR handle_key = ? LIMIT 1",
+    "SELECT * FROM users WHERE email = ? COLLATE NOCASE OR id = ? LIMIT 1",
   )
     .bind(identifier, handleKey)
     .first<UserRow>();
@@ -129,24 +135,22 @@ export async function loginOrRegister(
   const email = identifier;
   const handle = handleFromEmail(email);
   const handleKey = usernameKey(handle);
-  const id = randomId();
   const now = new Date().toISOString();
   const passwordValue = await createPasswordHash(password);
   try {
     await env.DB.prepare(
       `INSERT INTO users (
          id, handle, email, password_hash, password_salt, name, verified,
-         handle_key, bio, region, gender, birthday, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, '', '', '', '', ?, ?)`,
+         bio, region, gender, birthday, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, 0, '', '', '', '', ?, ?)`,
     )
       .bind(
-        id,
+        handleKey,
         handle,
         email,
         passwordValue.hash,
         passwordValue.salt,
         handle,
-        handleKey,
         now,
         now,
       )
@@ -159,7 +163,7 @@ export async function loginOrRegister(
     );
   }
   user = await env.DB.prepare("SELECT * FROM users WHERE id = ?")
-    .bind(id)
+    .bind(handleKey)
     .first<UserRow>();
   if (!user) {
     throw new HttpError(500, "USER_CREATE_FAILED", "Failed to create account.");
@@ -179,20 +183,18 @@ export async function updateProfile(
     handle?: string;
   },
 ) {
-  const current = await env.DB.prepare(
-    "SELECT handle, handle_key FROM users WHERE id = ?",
-  )
+  const current = await env.DB.prepare("SELECT handle FROM users WHERE id = ?")
     .bind(userId)
-    .first<{ handle: string; handle_key: string | null }>();
+    .first<{ handle: string }>();
   if (!current) {
     throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
   }
 
   const username = validateUsername(input.handle ?? current.handle);
   const birthday = validateBirthday(input.birthday ?? "");
-  if (username.handleKey !== current.handle_key) {
+  if (username.handleKey !== userId) {
     const existing = await env.DB.prepare(
-      "SELECT id FROM users WHERE handle_key = ? LIMIT 1",
+      "SELECT id FROM users WHERE id = ? LIMIT 1",
     )
       .bind(username.handleKey)
       .first<{ id: string }>();
@@ -200,18 +202,21 @@ export async function updateProfile(
       throw new HttpError(409, "USERNAME_TAKEN", "Username is already in use.");
     }
   }
+  if (username.handle !== current.handle) {
+    await moveAvatar(env, userId, username.handle);
+  }
 
   const now = new Date().toISOString();
   try {
     await env.DB.prepare(
       `UPDATE users
-       SET handle = ?, handle_key = ?, name = ?, bio = ?, region = ?,
-           gender = ?, birthday = ?, updated_at = ?
+       SET id = ?, handle = ?, name = ?, bio = ?, region = ?, gender = ?,
+           birthday = ?, updated_at = ?
        WHERE id = ?`,
     )
       .bind(
-        username.handle,
         username.handleKey,
+        username.handle,
         input.name?.trim() || "User",
         input.bio?.trim() ?? "",
         input.region?.trim() ?? "",
@@ -224,7 +229,7 @@ export async function updateProfile(
   } catch {
     throw new HttpError(409, "USERNAME_TAKEN", "Username is already in use.");
   }
-  return getAccount(env, userId);
+  return getAccount(env, username.handleKey);
 }
 
 export async function changeEmail(

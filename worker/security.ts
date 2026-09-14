@@ -28,7 +28,7 @@ function randomBytes(length: number): Bytes {
 }
 
 export function randomId(): string {
-  return crypto.randomUUID();
+  return bytesToBase64Url(randomBytes(16));
 }
 
 export function randomToken(): string {

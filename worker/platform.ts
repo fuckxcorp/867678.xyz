@@ -62,7 +62,6 @@ export interface UserRow {
   password_salt: string;
   name: string;
   verified: number;
-  handle_key: string | null;
   bio: string;
   region: string;
   gender: string;

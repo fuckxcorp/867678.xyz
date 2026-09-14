@@ -80,7 +80,7 @@ export async function getUserProfile(
          WHERE vf.follower_id = ? AND vf.followee_id = u.id
        ) AS following
      FROM users u
-     WHERE u.handle_key = ?
+     WHERE u.id = ?
      LIMIT 1`,
   )
     .bind(viewerId ?? "", usernameKey(handle))
@@ -94,9 +94,7 @@ export async function setFollow(
   handle: string,
   active: boolean,
 ) {
-  const target = await env.DB.prepare(
-    "SELECT id FROM users WHERE handle_key = ?",
-  )
+  const target = await env.DB.prepare("SELECT id FROM users WHERE id = ?")
     .bind(usernameKey(handle))
     .first<{ id: string }>();
   if (!target) throw new HttpError(404, "USER_NOT_FOUND", "User not found.");

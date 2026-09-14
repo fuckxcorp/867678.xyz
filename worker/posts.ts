@@ -201,7 +201,7 @@ export async function getPostByPath(
 ) {
   const row = await env.DB.prepare(
     `${POST_SELECT}
-     WHERE p.slug = ? AND u.handle_key = ?
+     WHERE p.slug = ? AND u.id = ?
        AND p.deleted_at IS NULL
      LIMIT 1`,
   )
@@ -225,7 +225,7 @@ export async function getPostsByUser(
   const rows = await allPosts<PostRow>(
     env.DB.prepare(
       `${POST_SELECT}
-       WHERE u.handle_key = ? AND p.deleted_at IS NULL
+       WHERE u.id = ? AND p.deleted_at IS NULL
        ORDER BY p.created_at DESC, p.id DESC
        LIMIT 100`,
     ).bind(

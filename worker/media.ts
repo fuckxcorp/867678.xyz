@@ -217,6 +217,32 @@ export async function uploadAvatar(
   return `/api/avatars/${encodeURIComponent(handle)}`;
 }
 
+export async function moveAvatar(
+  env: Env,
+  userId: string,
+  nextHandle: string,
+): Promise<void> {
+  const user = await env.DB.prepare("SELECT avatar_key FROM users WHERE id = ?")
+    .bind(userId)
+    .first<{ avatar_key: string | null }>();
+  if (!user?.avatar_key) return;
+
+  const nextKey = `avatars/${nextHandle}/avatar.avif`;
+  if (user.avatar_key === nextKey) return;
+
+  const object = await env.MEDIA_CACHE.get(user.avatar_key);
+  if (!object) return;
+  await env.MEDIA_CACHE.put(nextKey, await object.arrayBuffer(), {
+    httpMetadata: {
+      contentType: object.httpMetadata?.contentType ?? "image/avif",
+    },
+  });
+  await env.DB.prepare("UPDATE users SET avatar_key = ? WHERE id = ?")
+    .bind(nextKey, userId)
+    .run();
+  await env.MEDIA_CACHE.delete(user.avatar_key);
+}
+
 export async function getAvatar(
   env: Env,
   handle: string,
@@ -226,9 +252,7 @@ export async function getAvatar(
   size: number;
   etag: string;
 }> {
-  const user = await env.DB.prepare(
-    "SELECT avatar_key FROM users WHERE handle_key = ?",
-  )
+  const user = await env.DB.prepare("SELECT avatar_key FROM users WHERE id = ?")
     .bind(usernameKey(handle))
     .first<{ avatar_key: string | null }>();
   if (!user?.avatar_key) {
