@@ -1,7 +1,7 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "5.6.1",
+  "version": "5.6.2",
   "engines": {
     "node": ">=24.21.0"
   },
@@ -18,7 +18,7 @@
     "astro": "7.3.3",
     "github-markdown-css": "^5.9.0",
     "modern-normalize": "^3.0.1",
-    "wrangler": "4.134.0"
+    "wrangler": "4.135.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
