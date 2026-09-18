@@ -10,26 +10,13 @@ jobs:
     name: I'm leaving on a roundabout
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@main
-
-      - name: Set up Node.js
-        uses: actions/setup-node@main
+      - name: Just build, Don't worry
+        uses: moaeiou/moaeiou/actions/buildnode@main
         with:
-          node-version: latest
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@master
-
-      - name: Build!
-        shell: bash
-        run: |
-          pnpm fresh
-          pnpm install
-          pnpm build
-
-      - name: Sent to Cloudflare
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: pages deploy dist --project-name 867678
+          command: |
+            pnpm fresh
+            pnpm install
+            pnpm build
+          wrangler: "yes"
+          wrangler-apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wrangler-command: pages deploy dist --project-name 867678
