@@ -139,51 +139,47 @@ const sections: { id: string; label: string; links: NavItem[] }[] = [
         <span class="mode-dark">☾ Dark</span>
       </button>
 
-      {
-        sections.map((section) => (
-          <nav class="section" aria-labelledby={`nav-${section.id}`}>
-            <h2 class="section-label" id={`nav-${section.id}`}>
-              {section.label}
-            </h2>
-            <div class="nav-list">
-              {section.links.map((link) =>
-                isGroup(link) ? (
-                  <details
-                    class="nav-group"
-                    open={link.children.some((child) => isActive(child.href))}
-                  >
-                    <summary class="nav-item">{link.label}</summary>
-                    <div class="nav-sublist">
-                      {link.children.map((child) => (
-                        <a
-                          href={child.href}
-                          class:list={[
-                            "nav-item",
-                            { active: isActive(child.href) },
-                          ]}
-                          aria-current={
-                            isActive(child.href) ? "page" : undefined
-                          }
-                        >
-                          {child.label}
-                        </a>
-                      ))}
-                    </div>
-                  </details>
-                ) : (
-                  <a
-                    href={link.href}
-                    class:list={["nav-item", { active: isActive(link.href) }]}
-                    aria-current={isActive(link.href) ? "page" : undefined}
-                  >
-                    {link.label}
-                  </a>
-                ),
-              )}
-            </div>
-          </nav>
-        ))
-      }
+      {sections.map((section) => (
+        <nav class="section" aria-labelledby={`nav-${section.id}`}>
+          <h2 class="section-label" id={`nav-${section.id}`}>
+            {section.label}
+          </h2>
+          <div class="nav-list">
+            {section.links.map((link) =>
+              isGroup(link) ? (
+                <details
+                  class="nav-group"
+                  open={link.children.some((child) => isActive(child.href))}
+                >
+                  <summary class="nav-item">{link.label}</summary>
+                  <div class="nav-sublist">
+                    {link.children.map((child) => (
+                      <a
+                        href={child.href}
+                        class:list={[
+                          "nav-item",
+                          { active: isActive(child.href) },
+                        ]}
+                        aria-current={isActive(child.href) ? "page" : undefined}
+                      >
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              ) : (
+                <a
+                  href={link.href}
+                  class:list={["nav-item", { active: isActive(link.href) }]}
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                >
+                  {link.label}
+                </a>
+              ),
+            )}
+          </div>
+        </nav>
+      ))}
     </div>
 
     <p class="sidebar-footer">&copy; 2026 MoAEIOU</p>

@@ -88,28 +88,37 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <dl class="metric-list">
           <div>
             <dt>Latency</dt>
-            <dd id="latency" aria-live="polite">Not started</dd>
+            <dd id="latency" aria-live="polite">
+              Not started
+            </dd>
           </div>
           <div>
             <dt>Upload</dt>
-            <dd id="upload-speed" aria-live="polite">Not started</dd>
+            <dd id="upload-speed" aria-live="polite">
+              Not started
+            </dd>
           </div>
           <div>
             <dt>Download</dt>
-            <dd id="download-speed" aria-live="polite">Not started</dd>
+            <dd id="download-speed" aria-live="polite">
+              Not started
+            </dd>
           </div>
         </dl>
         <div class="speed-chart">
           <canvas
             id="speed-chart"
-            aria-label="Download and upload speed over time"></canvas>
+            aria-label="Download and upload speed over time"
+          ></canvas>
           <div class="speed-legend">
             <span class="legend-down">Download</span>
             <span class="legend-up">Upload</span>
           </div>
         </div>
         <div class="speed-actions">
-          <button id="run-speedtest" type="button">Run speedtest</button>
+          <button id="run-speedtest" type="button">
+            Run speedtest
+          </button>
           <p class="card-note">
             The upload and download lasted a total of 16 seconds.
           </p>
