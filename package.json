@@ -1,7 +1,7 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "5.6.4",
+  "version": "5.6.5",
   "engines": {
     "node": ">=24.21.0"
   },
@@ -17,11 +17,11 @@
   "dependencies": {
     "astro": "7.3.3",
     "github-markdown-css": "^5.9.0",
-    "modern-normalize": "^3.0.1",
-    "wrangler": "4.135.0"
+    "modern-normalize": "^3.0.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "wrangler": "4.135.0",
     "prettier": "^3.9.8",
     "prettier-plugin-astro": "^1.0.1"
   },
