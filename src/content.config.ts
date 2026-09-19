@@ -61,7 +61,7 @@ const PROJECTS: RemoteEntry[] = [
   {
     id: "0fi",
     title: "FancyIndex-Theme",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/0Fi@main/README.md",
+    url: "https://cdn.jsdelivr.net/gh/moaeiou/0Fi@main/README.en.md",
   },
   {
     id: "contento24",
