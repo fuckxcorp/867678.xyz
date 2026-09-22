@@ -16,8 +16,8 @@ minimumReleaseAgeExclude:
   - "@bruits/satteri-win32-arm64-msvc@0.10.3"
   - "@bruits/satteri-win32-x64-msvc@0.10.3"
   - satteri@0.10.3
-  - miniflare@5.20260918.0-alpha
-  - wrangler@4.135.0
+  - miniflare@5.20260921.0-alpha
+  - wrangler@4.136.0
   - "@cloudflare/workerd-darwin-64@1.20260918.1"
   - "@cloudflare/workerd-darwin-arm64@1.20260918.1"
   - "@cloudflare/workerd-linux-64@1.20260918.1"
