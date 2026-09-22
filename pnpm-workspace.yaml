@@ -3,6 +3,7 @@ allowBuilds:
   sharp: true
   workerd: true
 minimumReleaseAgeExclude:
+  - prettier@3.9.8
   - astro@7.3.3
   - "@astrojs/internal-helpers@0.11.0"
   - "@astrojs/markdown-satteri@0.4.1"
@@ -17,11 +18,11 @@ minimumReleaseAgeExclude:
   - "@bruits/satteri-win32-x64-msvc@0.10.3"
   - satteri@0.10.3
   - miniflare@5.20260921.0-alpha
-  - wrangler@4.136.0
+  - wrangler@4.136.1
+  - workerd@1.20260918.1
+  - '@cloudflare/unenv-preset@2.16.2'
   - "@cloudflare/workerd-darwin-64@1.20260918.1"
   - "@cloudflare/workerd-darwin-arm64@1.20260918.1"
   - "@cloudflare/workerd-linux-64@1.20260918.1"
   - "@cloudflare/workerd-linux-arm64@1.20260918.1"
   - "@cloudflare/workerd-windows-64@1.20260918.1"
-  - workerd@1.20260918.1
-  - prettier@3.9.8
