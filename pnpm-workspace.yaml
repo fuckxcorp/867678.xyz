@@ -3,7 +3,7 @@ allowBuilds:
   sharp: true
   workerd: true
 minimumReleaseAgeExclude:
-  - prettier@3.9.8
+  - prettier@3.9.9
   - astro@7.3.4
   - "@astrojs/internal-helpers@0.11.0"
   - "@astrojs/markdown-satteri@0.4.2"
