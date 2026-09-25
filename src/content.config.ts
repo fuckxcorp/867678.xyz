@@ -106,8 +106,14 @@ const docs: RemoteEntry[] = [
 const mdLoader = (entries: RemoteEntry[]): Loader => ({
   name: "get-markdown",
   load: async (context: LoaderContext) => {
-    for (const entry of entries) {
-      const markdown = await getMd(entry.url);
+    const remoteEntries = await Promise.all(
+      entries.map(async (entry) => ({
+        entry,
+        markdown: await getMd(entry.url),
+      })),
+    );
+
+    for (const { entry, markdown } of remoteEntries) {
       const rendered = await context.renderMarkdown(markdown);
       const data = await context.parseData({
         id: entry.id,

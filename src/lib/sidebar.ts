@@ -4,6 +4,7 @@ const closeButtons = document.querySelectorAll<HTMLElement>("[data-nav-close]");
 const themeToggle = document.querySelector<HTMLButtonElement>(
   "[data-theme-toggle]",
 );
+const mobileNav = matchMedia("(max-width: 640px)");
 
 const isNavActive = (href: string, pathname: string) =>
   href === "/" ? pathname === href : pathname.startsWith(href);
@@ -24,11 +25,30 @@ const syncActive = () => {
     });
 };
 
-const setOpen = (open: boolean) => {
-  document.documentElement.classList.toggle("nav-open", open);
+const syncNavState = (): void => {
+  const mobile = mobileNav.matches;
+  const open =
+    mobile && document.documentElement.classList.contains("nav-open");
+  if (!mobile) document.documentElement.classList.remove("nav-open");
+  if (sidebar) {
+    sidebar.inert = mobile && !open;
+    if (mobile && !open) sidebar.setAttribute("aria-hidden", "true");
+    else sidebar.removeAttribute("aria-hidden");
+  }
+  const main = document.querySelector<HTMLElement>(".pages-wrapper");
+  if (main) main.inert = open;
   trigger?.setAttribute("aria-expanded", String(open));
+};
+
+const setOpen = (open: boolean): void => {
+  const wasOpen = document.documentElement.classList.contains("nav-open");
+  document.documentElement.classList.toggle(
+    "nav-open",
+    mobileNav.matches && open,
+  );
+  syncNavState();
   if (open) sidebar?.querySelector<HTMLElement>("a, button")?.focus();
-  else trigger?.focus();
+  else if (wasOpen) trigger?.focus();
 };
 
 trigger?.addEventListener("click", () => setOpen(true));
@@ -46,8 +66,33 @@ document.addEventListener("keydown", (event) => {
     document.documentElement.classList.contains("nav-open")
   ) {
     setOpen(false);
+    return;
+  }
+  if (
+    event.key !== "Tab" ||
+    !mobileNav.matches ||
+    !document.documentElement.classList.contains("nav-open") ||
+    !sidebar
+  )
+    return;
+  const focusable = Array.from(
+    sidebar.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
   }
 });
+
+mobileNav.addEventListener("change", syncNavState);
 
 const themeModes = ["auto", "light", "dark"] as const;
 themeToggle?.addEventListener("click", () => {
@@ -63,4 +108,8 @@ themeToggle?.addEventListener("click", () => {
   document.documentElement.dataset.theme = dark ? "dark" : "light";
 });
 
-document.addEventListener("astro:page-load", syncActive);
+document.addEventListener("astro:page-load", () => {
+  syncActive();
+  syncNavState();
+});
+syncNavState();

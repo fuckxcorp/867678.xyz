@@ -88,23 +88,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <dl class="metric-list">
           <div>
             <dt>Latency</dt>
-            <dd id="latency" aria-live="polite">
-              Not started
-            </dd>
+            <dd id="latency">Not started</dd>
           </div>
           <div>
             <dt>Upload</dt>
-            <dd id="upload-speed" aria-live="polite">
-              Not started
-            </dd>
+            <dd id="upload-speed">Not started</dd>
           </div>
           <div>
             <dt>Download</dt>
-            <dd id="download-speed" aria-live="polite">
-              Not started
-            </dd>
+            <dd id="download-speed">Not started</dd>
           </div>
         </dl>
+        <p id="speed-status" class="sr-only" aria-live="polite"></p>
         <div class="speed-chart">
           <canvas
             id="speed-chart"

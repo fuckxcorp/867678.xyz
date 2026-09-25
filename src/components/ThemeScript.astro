@@ -8,6 +8,10 @@ const { pageEnter = false } = Astro.props;
 
 <script is:inline define:vars={{ pageEnter }}>
   (() => {
+    const stateKey = Symbol.for("867678.xyz.theme-script");
+    if (window[stateKey]) return;
+    window[stateKey] = true;
+
     const mq = matchMedia("(prefers-color-scheme: dark)");
     const applyTheme = () => {
       const mode = localStorage.getItem("theme") ?? "auto";

@@ -6,6 +6,7 @@ let backgroundQueue = Promise.resolve();
 let speedtestActive = false;
 let resumeBackground = Promise.resolve();
 let releaseBackground = (): void => {};
+let backgroundGeneration = 0;
 const activeBackground = new Set<AbortController>();
 const activePageRequests = new Set<AbortController>();
 
@@ -40,9 +41,12 @@ export const fetchWithTimeout = async (
 };
 
 export const enqueueBackgroundNetworkTask = (task: NetworkTask): void => {
+  const generation = backgroundGeneration;
   const run = async (): Promise<void> => {
     while (true) {
+      if (generation !== backgroundGeneration) return;
       await waitForBackgroundWindow();
+      if (generation !== backgroundGeneration) return;
       const controller = new AbortController();
       activeBackground.add(controller);
       try {
@@ -50,6 +54,7 @@ export const enqueueBackgroundNetworkTask = (task: NetworkTask): void => {
         return;
       } catch (error) {
         if (!controller.signal.aborted) throw error;
+        if (generation !== backgroundGeneration) return;
       } finally {
         activeBackground.delete(controller);
       }
@@ -57,6 +62,11 @@ export const enqueueBackgroundNetworkTask = (task: NetworkTask): void => {
   };
 
   backgroundQueue = backgroundQueue.then(run, run);
+};
+
+export const cancelBackgroundNetworkTasks = (): void => {
+  backgroundGeneration += 1;
+  for (const controller of activeBackground) controller.abort();
 };
 
 export const pauseBackgroundNetworkTasks = (): (() => void) => {

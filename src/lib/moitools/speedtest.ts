@@ -56,12 +56,20 @@ const isAbort = (error: unknown): boolean =>
     ? error.name === "AbortError"
     : error instanceof Error && error.name === "AbortError";
 
+const announce = (message: string): void => {
+  const status = el("speed-status");
+  if (status) status.textContent = message;
+};
+
 /** 当前测速的运行期控制器；离开页面时由 astro:before-swap 调用中止 */
 let activeRun: AbortController | null = null;
+let activeChart: ReturnType<typeof createSpeedChart> | null = null;
 
 export const cancelActiveSpeedtest = (): void => {
   activeRun?.abort();
   activeRun = null;
+  activeChart?.destroy();
+  activeChart = null;
 };
 
 const mbps = (bytes: number, elapsedMs: number): string => {
@@ -116,14 +124,17 @@ const testPing = async (
   external: AbortSignal,
 ): Promise<boolean> => {
   element.textContent = "Testing latency...";
+  announce("Testing latency");
   const samples = (await pingRound(external)).flatMap((result) =>
     result.status === "fulfilled" ? [result.value] : [],
   );
   if (!samples.length) {
     element.textContent = "Timed out";
+    announce("Latency test timed out");
     return false;
   }
   element.textContent = `${Math.min(...samples).toFixed(1)} ms`;
+  announce(`Latency ${element.textContent}`);
   return true;
 };
 
@@ -133,6 +144,7 @@ const testDownload = async (
   external: AbortSignal,
 ): Promise<void> => {
   element.textContent = "Connecting...";
+  announce("Testing download speed");
   const controller = new AbortController();
   const started = performance.now();
   let totalBytes = 0;
@@ -176,6 +188,7 @@ const testDownload = async (
       totalBytes,
       Math.min(DOWN_MS, performance.now() - started),
     );
+    announce(`Download ${element.textContent}`);
   }
 };
 
@@ -185,6 +198,7 @@ const testUpload = async (
   external: AbortSignal,
 ): Promise<void> => {
   element.textContent = "Connecting...";
+  announce("Testing upload speed");
   const controller = new AbortController();
   const started = performance.now();
   let totalBytes = 0;
@@ -226,6 +240,7 @@ const testUpload = async (
       totalBytes,
       Math.min(UP_MS, performance.now() - started),
     );
+    announce(`Upload ${element.textContent}. Speed test complete`);
   }
 };
 
@@ -240,6 +255,7 @@ export const initSpeed = (): void => {
   button.dataset.bound = "true";
 
   const chart = createSpeedChart(canvas);
+  activeChart = chart;
 
   button.addEventListener("click", async () => {
     if (button.disabled) return;

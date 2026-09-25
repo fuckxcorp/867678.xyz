@@ -167,5 +167,10 @@ export const createSpeedChart = (canvas: HTMLCanvasElement) => {
   });
   draw();
 
-  return { add, start, draw };
+  const destroy = (): void => {
+    observer.disconnect();
+    theme.disconnect();
+  };
+
+  return { add, start, draw, destroy };
 };

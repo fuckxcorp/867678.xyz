@@ -2,6 +2,18 @@
   font-family: "Segoe UI", Roboto, Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 :root {
   color-scheme: light;
   --sidebar-width: 200px;
@@ -17,9 +29,9 @@
   --color-watermark: #eef0f3;
   --color-text: #3f4750;
   --color-text-strong: #1f2328;
-  --color-text-muted: #6c7480;
-  --color-accent: #5b7aa8;
-  --color-accent-hover: #4c6a96;
+  --color-text-muted: #626a75;
+  --color-accent: #4c6a96;
+  --color-accent-hover: #3f5c86;
   --color-accent-soft: #e9edf3;
   --color-accent-soft-2: #e2e7ef;
   --color-note-bg: #f4f6f9;
