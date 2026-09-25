@@ -17,8 +17,8 @@ minimumReleaseAgeExclude:
   - "@bruits/satteri-win32-arm64-msvc@0.10.3"
   - "@bruits/satteri-win32-x64-msvc@0.10.3"
   - satteri@0.10.3
-  - miniflare@5.20260921.1-alpha
-  - wrangler@4.138.0
+  - miniflare@5.20260923.0-alpha || 55.20260923.0-alpha
+  - wrangler@4.139.0
   - workerd@1.20260918.1
   - "@cloudflare/unenv-preset@2.16.2"
   - "@cloudflare/workerd-darwin-64@1.20260918.1"
@@ -26,3 +26,4 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workerd-linux-64@1.20260918.1"
   - "@cloudflare/workerd-linux-arm64@1.20260918.1"
   - "@cloudflare/workerd-windows-64@1.20260918.1"
+  - prettier-plugin-astro@1.1.0
