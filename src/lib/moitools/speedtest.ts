@@ -17,6 +17,7 @@ const DOWNLOAD_SOURCES = [
   "https://speed.cloudflare.com/__down?bytes=9999999",
   "https://la.867678.xyz/speedtest",
   "https://sg.867678.xyz/speedtest",
+  "https://ki.867678.xyz/speedtest",
 ];
 
 const UPLOAD_URL = "https://speed.cloudflare.com/__up";
