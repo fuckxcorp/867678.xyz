@@ -4,13 +4,16 @@ import { fetchWithTimeout, pauseBackgroundNetworkTasks } from "./network";
 
 const LATENCY_TARGETS = [
   "https://www.gstatic.com/generate_204",
+  "https://yt3.ggpht.com/favicon.ico",
   "https://cp.cloudflare.com/generate_204",
   "https://www.apple.com/library/test/success.html",
   "https://www.qualcomm.cn/cdn-cgi/trace",
   "https://www.miwifi.com/statics/img/wf_btn_off.png",
   "https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png",
-  "https://perfops.byte-test.com/500b-bench.jpg",
-  "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png",
+  "https://i0.hdslb.com/bfs/face/member/noface.jpg@24w_24h_1c",
+  "https://img.alicdn.com/imgextra/i2/O1CN01qnQCrN1VkzAWiU4Hs_!!6000000002692-2-tps-33-33.png",
+  "https://lf3-zlink-tos.ugurl.cn/obj/zebra-public/resource_lmmizj_1632398893.png",
+  "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico"
 ];
 
 const DOWNLOAD_SOURCES = [
