@@ -24,29 +24,28 @@ const UPLOAD_URL = "https://speed.cloudflare.com/__up";
 const UPLOAD_STREAMS = 4;
 
 const PING_MS = 1_000;
+const PING_SAMPLES = 5;
 const DOWN_MS = 8_000;
 const UP_MS = 8_000;
 const UPLOAD_CHUNK = 512 * 1024;
 
-/** 与 wait 相同，但外部信号中止时立刻拒绝，用于离开页面时终止整个测速 */
 const abortableWait = (ms: number, external: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     if (external.aborted) {
       reject(external.reason);
       return;
     }
-    const timer = window.setTimeout(resolve, ms);
-    external.addEventListener(
-      "abort",
-      () => {
-        window.clearTimeout(timer);
-        reject(external.reason);
-      },
-      { once: true },
-    );
+    const onAbort = (): void => {
+      window.clearTimeout(timer);
+      reject(external.reason);
+    };
+    const timer = window.setTimeout(() => {
+      external.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    external.addEventListener("abort", onAbort, { once: true });
   });
 
-/** 合并运行期信号与阶段内超时/截止信号 */
 const withExternal = (
   signal: AbortSignal,
   external: AbortSignal,
@@ -62,7 +61,6 @@ const announce = (message: string): void => {
   if (status) status.textContent = message;
 };
 
-/** 当前测速的运行期控制器；离开页面时由 astro:before-swap 调用中止 */
 let activeRun: AbortController | null = null;
 let activeChart: ReturnType<typeof createSpeedChart> | null = null;
 
@@ -102,23 +100,33 @@ const liveSpeed = (
   }, 150);
 };
 
-const pingRound = (external: AbortSignal) =>
-  Promise.allSettled(
-    LATENCY_TARGETS.map(async (url) => {
-      const start = performance.now();
-      await fetchWithTimeout(
-        url,
-        {
-          mode: "no-cors",
-          cache: "no-store",
-          signal: withExternal(AbortSignal.timeout(PING_MS), external),
-        },
-        undefined,
-        true,
-      );
-      return performance.now() - start;
-    }),
+const probeLatency = async (
+  source: string,
+  external: AbortSignal,
+): Promise<{ source: string; latency: number }> => {
+  const url = new URL(source);
+  url.searchParams.set("_", crypto.randomUUID());
+  const start = performance.now();
+  await fetchWithTimeout(
+    url,
+    {
+      mode: "no-cors",
+      cache: "no-store",
+      signal: withExternal(AbortSignal.timeout(PING_MS), external),
+    },
+    undefined,
+    true,
   );
+  return { source, latency: performance.now() - start };
+};
+
+const median = (values: number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+};
 
 const testPing = async (
   element: HTMLElement,
@@ -126,15 +134,33 @@ const testPing = async (
 ): Promise<boolean> => {
   element.textContent = "Testing latency...";
   announce("Testing latency");
-  const samples = (await pingRound(external)).flatMap((result) =>
-    result.status === "fulfilled" ? [result.value] : [],
+  const candidates = (
+    await Promise.allSettled(
+      LATENCY_TARGETS.map((url) => probeLatency(url, external)),
+    )
+  ).flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
+  if (!candidates.length) {
+    element.textContent = "Timed out";
+    announce("Latency test timed out");
+    return false;
+  }
+  const fastest = candidates.reduce((best, candidate) =>
+    candidate.latency < best.latency ? candidate : best,
   );
+  const samples: number[] = [];
+  for (let index = 0; index < PING_SAMPLES; index += 1) {
+    try {
+      samples.push((await probeLatency(fastest.source, external)).latency);
+    } catch (error) {
+      if (external.aborted) throw error;
+    }
+  }
   if (!samples.length) {
     element.textContent = "Timed out";
     announce("Latency test timed out");
     return false;
   }
-  element.textContent = `${Math.min(...samples).toFixed(1)} ms`;
+  element.textContent = `${median(samples).toFixed(1)} ms`;
   announce(`Latency ${element.textContent}`);
   return true;
 };
@@ -152,22 +178,24 @@ const testDownload = async (
   const timer = liveSpeed(element, () => totalBytes, started, "down", chart);
   const stop = window.setTimeout(() => controller.abort(), DOWN_MS);
 
-  const pull = async (url: string): Promise<void> => {
-    const response = await fetchWithTimeout(
-      url,
-      {
-        signal: withExternal(controller.signal, external),
-        cache: "no-store",
-      },
-      0,
-      true,
-    );
-    if (!response.ok || !response.body) return;
-    const reader = response.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      totalBytes += value?.byteLength ?? 0;
+  const pull = async (source: string): Promise<void> => {
+    const signal = withExternal(controller.signal, external);
+    while (!signal.aborted) {
+      const url = new URL(source);
+      url.searchParams.set("_", crypto.randomUUID());
+      const response = await fetchWithTimeout(
+        url,
+        { signal, cache: "no-store" },
+        0,
+        true,
+      );
+      if (!response.ok || !response.body) return;
+      const reader = response.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value?.byteLength ?? 0;
+      }
     }
   };
 

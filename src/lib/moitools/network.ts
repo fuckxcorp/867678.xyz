@@ -22,21 +22,20 @@ export const fetchWithTimeout = async (
 ): Promise<Response> => {
   if (!keepDuringSpeedtest) await waitForBackgroundWindow();
   const controller = new AbortController();
-  const abort = () => controller.abort(init.signal?.reason);
   const timeout = timeoutMs
     ? window.setTimeout(() => controller.abort(), timeoutMs)
     : undefined;
+  const signal = init.signal
+    ? AbortSignal.any([controller.signal, init.signal])
+    : controller.signal;
 
-  if (init.signal?.aborted) abort();
-  else init.signal?.addEventListener("abort", abort, { once: true });
   if (!keepDuringSpeedtest) activePageRequests.add(controller);
 
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    return await fetch(input, { ...init, signal });
   } finally {
     activePageRequests.delete(controller);
     if (timeout !== undefined) window.clearTimeout(timeout);
-    init.signal?.removeEventListener("abort", abort);
   }
 };
 

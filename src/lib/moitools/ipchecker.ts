@@ -14,8 +14,6 @@ interface IpinfoLite {
   city?: string;
 }
 
-// 页面信息类请求只有几 KB，不值得为测速让路：keepDuringSpeedtest=true，
-// 避免被测速窗口阻塞（一直 Getting data...）或被中途 abort（永久 Unavailable）。
 const json = async <T>(url: string): Promise<T> => {
   const response = await fetchWithTimeout(
     url,
