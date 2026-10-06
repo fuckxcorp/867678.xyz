@@ -4,10 +4,10 @@ allowBuilds:
   workerd: true
 minimumReleaseAgeExclude:
   - prettier@3.9.9
-  - astro@7.3.5
+  - astro@7.3.6
   - prettier-plugin-astro@1.1.0
-  - "@astrojs/internal-helpers@0.11.0"
-  - "@astrojs/markdown-satteri@0.4.2"
+  - "@astrojs/internal-helpers@0.12.0"
+  - "@astrojs/markdown-satteri@0.4.3"
   - "@bruits/satteri-darwin-arm64@0.10.3"
   - "@bruits/satteri-darwin-x64@0.10.3"
   - "@bruits/satteri-linux-arm64-gnu@0.10.3"
