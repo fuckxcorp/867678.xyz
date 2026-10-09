@@ -10,10 +10,9 @@ const LATENCY_TARGETS = [
   "https://www.qualcomm.cn/cdn-cgi/trace",
   "https://www.miwifi.com/statics/img/wf_btn_off.png",
   "https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png",
-  "https://i0.hdslb.com/bfs/face/member/noface.jpg@24w_24h_1c",
   "https://img.alicdn.com/imgextra/i2/O1CN01qnQCrN1VkzAWiU4Hs_!!6000000002692-2-tps-33-33.png",
   "https://lf3-zlink-tos.ugurl.cn/obj/zebra-public/resource_lmmizj_1632398893.png",
-  "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico"
+  "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico",
 ];
 
 const DOWNLOAD_SOURCES = [
@@ -30,7 +29,7 @@ const PING_MS = 1_000;
 const PING_SAMPLES = 5;
 const DOWN_MS = 8_000;
 const UP_MS = 8_000;
-const UPLOAD_CHUNK = 512 * 1024;
+const UPLOAD_CHUNK = 8 * 1024 * 1024;
 
 const abortableWait = (ms: number, external: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -238,22 +237,47 @@ const testUpload = async (
   const timer = liveSpeed(element, () => totalBytes, started, "up", chart);
   const stop = window.setTimeout(() => controller.abort(), UP_MS);
 
-  const push = async (): Promise<void> => {
-    while (!controller.signal.aborted && !external.aborted) {
-      const response = await fetchWithTimeout(
-        UPLOAD_URL,
-        {
-          method: "POST",
-          body: chunk,
-          signal: withExternal(controller.signal, external),
-          cache: "no-store",
-        },
-        0,
-        true,
+  const uploadOnce = (signal: AbortSignal): Promise<boolean> =>
+    new Promise((resolve) => {
+      if (signal.aborted) {
+        resolve(false);
+        return;
+      }
+
+      const request = new XMLHttpRequest();
+      let counted = 0;
+      let settled = false;
+      const record = (event: ProgressEvent): void => {
+        const loaded = Math.min(event.loaded, chunk.byteLength);
+        totalBytes += Math.max(0, loaded - counted);
+        counted = loaded;
+      };
+      const finish = (success: boolean): void => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener("abort", abort);
+        resolve(success);
+      };
+      const abort = (): void => request.abort();
+
+      request.upload.addEventListener("progress", record);
+      request.upload.addEventListener("load", record);
+      request.addEventListener(
+        "load",
+        () => finish(request.status >= 200 && request.status < 300),
+        { once: true },
       );
-      if (!response.ok) return;
-      totalBytes += chunk.byteLength;
-    }
+      request.addEventListener("error", () => finish(false), { once: true });
+      request.addEventListener("abort", () => finish(false), { once: true });
+      signal.addEventListener("abort", abort, { once: true });
+
+      request.open("POST", UPLOAD_URL);
+      request.send(chunk);
+    });
+
+  const push = async (): Promise<void> => {
+    const signal = withExternal(controller.signal, external);
+    while (!signal.aborted && (await uploadOnce(signal))) {}
   };
 
   try {
