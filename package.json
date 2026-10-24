@@ -1,9 +1,9 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "5.9.7",
+  "version": "5.9.8",
   "engines": {
-    "node": ">=24.21.0"
+    "node": ">=24.22.1"
   },
   "scripts": {
     "fresh": "./fresh.sh",
