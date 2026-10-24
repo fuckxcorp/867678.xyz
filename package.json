@@ -1,7 +1,7 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "5.9.6",
+  "version": "5.9.7",
   "engines": {
     "node": ">=24.21.0"
   },
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "prettier": "3.9.10",
-    "prettier-plugin-astro": "1.1.1",
+    "prettier-plugin-astro": "1.1.2",
     "wrangler": "4.151.3"
   },
   "packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61"
