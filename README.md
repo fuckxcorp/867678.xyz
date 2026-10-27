@@ -30,18 +30,6 @@ All commands are run from the root of the project, from a terminal:
 | `pnpm format`                                | Format files with Prettier                           |
 | `pnpm check`                                 | Run `astro check` and check formatting with Prettier |
 
-## ⚠️ Warning
-
-If your internet is not good, you may not be able to run `pnpm dev`.
-
-To solve this problem, we use `cdn.jsdelivr.net`.
-
-But it introduces a new problem: for speed, jsDelivr caches files and only refreshes them every 24 hours.
-
-To solve this problem, we created a simple script.
-
-Run `pnpm fresh` to run this script and refresh the CDN cache, so that the CDN gets the latest files.
-
 ## ⚖️ LICENSE
 
 This website and the MoITools and CyAks projects are licensed under the [MoPL](https://867678.xyz/docs/mopl)

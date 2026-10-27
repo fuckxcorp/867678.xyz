@@ -14,7 +14,6 @@ jobs:
         uses: moaeiou/moaeiou/actions/buildnode@main
         with:
           command: |
-            pnpm fresh
             pnpm install
             pnpm build
           wrangler: "yes"

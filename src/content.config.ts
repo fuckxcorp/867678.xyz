@@ -13,7 +13,7 @@ const HOME: RemoteEntry[] = [
   {
     id: "home",
     title: "Home",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/moaeiou@main/README.md",
+    url: "https://raw.githubusercontent.com/moaeiou/moaeiou/refs/heads/main/README.md",
   },
 ];
 
@@ -21,67 +21,67 @@ const PROJECTS: RemoteEntry[] = [
   {
     id: "mio",
     title: "mio protocol",
-    url: "https://cdn.jsdelivr.net/gh/orgmio/mio@main/README.md",
+    url: "https://raw.githubusercontent.com/orgmio/mio/refs/heads/main/README.md",
   },
   {
     id: "mcry",
     title: "MCRY",
-    url: "https://cdn.jsdelivr.net/gh/orgmio/mcry@main/README.md",
+    url: "https://raw.githubusercontent.com/orgmio/mcry/refs/heads/main/README.md",
   },
   {
     id: "qcsh",
     title: "QUICShell",
-    url: "https://cdn.jsdelivr.net/gh/orgmio/qcsh@main/README.md",
+    url: "https://raw.githubusercontent.com/orgmio/qcsh/refs/heads/main/README.md",
   },
   {
     id: "cv",
     title: "CV",
-    url: "https://cdn.jsdelivr.net/gh/orgmio/cv@main/README.md",
+    url: "https://raw.githubusercontent.com/orgmio/cv/refs/heads/main/README.md",
   },
   {
     id: "omio",
     title: "older mio protocol",
-    url: "https://cdn.jsdelivr.net/gh/orgmio/mio@omio/README.md",
+    url: "https://raw.githubusercontent.com/orgmio/mio/refs/heads/omio/README.md",
   },
   {
     id: "luci-app-oplist",
     title: "LuCI-APP-OpenList",
-    url: "https://cdn.jsdelivr.net/gh/morouter/luci-app-oplist@main/README.md",
+    url: "https://raw.githubusercontent.com/morouter/luci-app-oplist/refs/heads/main/README.md",
   },
   {
     id: "luci-app-rsop",
     title: "LuCI-APP-Rustdesk for OpenWrt",
-    url: "https://cdn.jsdelivr.net/gh/morouter/luci-app-rsop@main/README.md",
+    url: "https://raw.githubusercontent.com/morouter/luci-app-rsop/refs/heads/main/README.md",
   },
   {
     id: "luci-app-pm",
     title: "LuCI-APP-PowerManager",
-    url: "https://cdn.jsdelivr.net/gh/morouter/luci-app-pm@main/README.md",
+    url: "https://raw.githubusercontent.com/morouter/luci-app-pm/refs/heads/main/README.md",
   },
   {
     id: "0fi",
     title: "FancyIndex-Theme",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/0Fi@main/README.en.md",
+    url: "https://raw.githubusercontent.com/moaeiou/0Fi/refs/heads/main/README.en.md",
   },
   {
     id: "contento24",
     title: "Contento24",
-    url: "https://cdn.jsdelivr.net/gh/contento24/contento24@main/README.md",
+    url: "https://raw.githubusercontent.com/contento24/contento24/refs/heads/main/README.md",
   },
   {
     id: "mineradio",
     title: "Mineradio",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/mineradio@main/README.md",
+    url: "https://raw.githubusercontent.com/moaeiou/mineradio/refs/heads/main/README.md",
   },
   {
     id: "go-rustdesk-server",
     title: "Go Rustdesk Server",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/go-rustdesk-server@main/README.md",
+    url: "https://raw.githubusercontent.com/moaeiou/go-rustdesk-server/refs/heads/main/README.md",
   },
   {
     id: "xavatarwall",
     title: "X(Twitter) Avatar Wall",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/xavatarwall@main/README.md",
+    url: "https://raw.githubusercontent.com/moaeiou/xavatarwall/refs/heads/main/README.md",
   },
 ];
 
@@ -89,17 +89,17 @@ const docs: RemoteEntry[] = [
   {
     id: "mirrors",
     title: "Resources mirrors",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/moaeiou@main/docs/mirrors.md",
+    url: "https://raw.githubusercontent.com/moaeiou/moaeiou/refs/heads/main/docs/mirrors.md",
   },
   {
     id: "openwrt",
     title: "Anything about OpenWrt",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/moaeiou@main/docs/openwrt.md",
+    url: "https://raw.githubusercontent.com/moaeiou/moaeiou/refs/heads/main/docs/openwrt.md",
   },
   {
     id: "mopl",
     title: "Mo Public License",
-    url: "https://cdn.jsdelivr.net/gh/moaeiou/moaeiou@main/LICENSE.md",
+    url: "https://raw.githubusercontent.com/moaeiou/moaeiou/refs/heads/main/LICENSE.md",
   },
 ];
 

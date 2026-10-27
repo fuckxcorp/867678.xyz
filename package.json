@@ -1,12 +1,11 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "5.9.8",
+  "version": "5.9.9",
   "engines": {
     "node": ">=24.22.1"
   },
   "scripts": {
-    "fresh": "./fresh.sh",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
