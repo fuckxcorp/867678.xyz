@@ -64,59 +64,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
               </dl>
             </section>
             <section class="ip-source">
-              <h3>ip138.com</h3>
+              <h3>IP.CN</h3>
               <dl>
                 <div>
                   <dt>IP</dt>
-                  <dd id="ip138-ip">Getting data...</dd>
+                  <dd id="myip-ip">Getting data...</dd>
                 </div>
                 <div>
                   <dt>Location</dt>
-                  <dd id="ip138-location">Getting data...</dd>
+                  <dd id="myip-location">Getting data...</dd>
                 </div>
               </dl>
             </section>
           </div>
-        </div>
-      </article>
-
-      <article class="tool-card speed-card">
-        <div class="card-heading">
-          <p class="card-kicker">Performance</p>
-          <h2>Internet speedtest</h2>
-        </div>
-        <dl class="metric-list">
-          <div>
-            <dt>Latency</dt>
-            <dd id="latency">Not started</dd>
-          </div>
-          <div>
-            <dt>Upload</dt>
-            <dd id="upload-speed">Not started</dd>
-          </div>
-          <div>
-            <dt>Download</dt>
-            <dd id="download-speed">Not started</dd>
-          </div>
-        </dl>
-        <p id="speed-status" class="sr-only" aria-live="polite"></p>
-        <div class="speed-chart">
-          <canvas
-            id="speed-chart"
-            aria-label="Download and upload speed over time"
-          ></canvas>
-          <div class="speed-legend">
-            <span class="legend-down">Download</span>
-            <span class="legend-up">Upload</span>
-          </div>
-        </div>
-        <div class="speed-actions">
-          <button id="run-speedtest" type="button">
-            Run speedtest
-          </button>
-          <p class="card-note">
-            The upload and download lasted a total of 16 seconds.
-          </p>
         </div>
       </article>
 
@@ -172,6 +132,23 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
                 </div>
               </dl>
             </section>
+            <section class="stun-row" id="stun-tencent" data-state="wait">
+              <h4>stun.qq.com</h4>
+              <dl>
+                <div>
+                  <dt>Status</dt>
+                  <dd id="stun-tencent-status">Testing...</dd>
+                </div>
+                <div>
+                  <dt>Host</dt>
+                  <dd id="stun-tencent-host">—</dd>
+                </div>
+                <div>
+                  <dt>Result</dt>
+                  <dd id="stun-tencent-srflx">—</dd>
+                </div>
+              </dl>
+            </section>
             <section class="stun-row" id="stun-cloudflare" data-state="wait">
               <h4>stun.cloudflare.com</h4>
               <dl>
@@ -190,7 +167,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
               </dl>
             </section>
             <section class="stun-row" id="stun-google" data-state="wait">
-              <h4>stun.l.google.com</h4>
+              <h4>stun.l.google.com:19302</h4>
               <dl>
                 <div>
                   <dt>Status</dt>
@@ -203,23 +180,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
                 <div>
                   <dt>Result</dt>
                   <dd id="stun-google-srflx">—</dd>
-                </div>
-              </dl>
-            </section>
-            <section class="stun-row" id="stun-nextcloud" data-state="wait">
-              <h4>stun.nextcloud.com</h4>
-              <dl>
-                <div>
-                  <dt>Status</dt>
-                  <dd id="stun-nextcloud-status">Testing...</dd>
-                </div>
-                <div>
-                  <dt>Host</dt>
-                  <dd id="stun-nextcloud-host">—</dd>
-                </div>
-                <div>
-                  <dt>Result</dt>
-                  <dd id="stun-nextcloud-srflx">—</dd>
                 </div>
               </dl>
             </section>
@@ -241,24 +201,73 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       </div>
     </section>
 
+    <article class="tool-card speed-card">
+      <div class="card-heading">
+        <p class="card-kicker">Performance</p>
+        <h2>Internet speedtest</h2>
+      </div>
+      <dl class="metric-list">
+        <div class="metric-latency">
+          <dt>Latency</dt>
+          <dd id="latency">Not started</dd>
+        </div>
+      </dl>
+      <p id="speed-status" class="sr-only" aria-live="polite"></p>
+      <div class="speed-charts">
+        <section class="speed-chart">
+          <div class="speed-chart-heading">
+            <h3>Download speed</h3>
+            <output id="download-speed" class="speed-chart-value">
+              Not started
+            </output>
+          </div>
+          <canvas
+            id="download-chart"
+            aria-label="Download speed over time"
+          ></canvas>
+        </section>
+        <section class="speed-chart">
+          <div class="speed-chart-heading">
+            <h3>Upload speed</h3>
+            <output id="upload-speed" class="speed-chart-value">
+              Not started
+            </output>
+          </div>
+          <canvas
+            id="upload-chart"
+            aria-label="Upload speed over time"
+          ></canvas>
+        </section>
+      </div>
+      <div class="speed-actions">
+        <button id="run-speedtest" type="button">
+          Run speedtest
+        </button>
+        <p class="card-note">
+          The download lasts 10 seconds and the upload lasts 6 seconds.
+        </p>
+      </div>
+    </article>
+
     <div class="tools-footer">
       <aside class="footer">
-        <div>
-          <h2>We do not collect your data!</h2>
-          <p>
-            MoITools is an open source project, so we do not save any results.
-          </p>
-          <p>
-            But we depend on some service providers, and they may save your
-            results, so please check their privacy policy.
-          </p>
-        </div>
-      </aside>
-      <aside class="footer">
-        <div>
-          <h2>Please Note!</h2>
-          <p>This project is free, but your data usage may incur charges.</p>
-        </div>
+        <h2>Notes</h2>
+        <ul class="footer-list">
+          <li>
+            <strong>We do not collect your data</strong> MoITools is an open
+            source project, so we do not save any results. However, we depend on
+            service providers that may save your results; please check their
+            privacy policies.
+          </li>
+          <li>
+            <strong>Please note</strong> This project is free, but your data
+            usage may incur charges.
+          </li>
+          <li>
+            <strong>No promises</strong> Test results do not constitute any 
+            form of guarantee and are provided for reference only.
+          </li>
+        </ul>
       </aside>
     </div>
   </div>

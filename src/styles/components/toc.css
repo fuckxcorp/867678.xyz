@@ -12,6 +12,8 @@
 .toc {
   position: sticky;
   top: 2rem;
+  box-sizing: border-box;
+  height: calc(100dvh - 4rem);
   max-height: calc(100dvh - 4rem);
   overflow-y: auto;
   padding-left: 1rem;

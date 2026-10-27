@@ -9,6 +9,7 @@
   display: flex;
   width: 100%;
   max-width: none;
+  padding-bottom: 0;
 }
 
 .tools-page {
@@ -17,7 +18,7 @@
   flex: 1 1 auto;
   min-height: 100%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto auto auto auto;
   gap: 16px;
 }
 
@@ -51,8 +52,7 @@
 
 .tools-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
   min-height: 0;
@@ -63,13 +63,13 @@
 }
 
 .speed-card {
-  grid-column: 2;
+  position: relative;
   display: flex;
   flex-direction: column;
 }
 
 .client-card {
-  grid-column: 1 / -1;
+  grid-column: 2;
 }
 
 .tool-card,
@@ -182,31 +182,108 @@
 
 .metric-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   margin: 16px 0 0;
 }
 
-.metric-list > div {
+.metric-latency,
+.metric-speed {
   min-width: 0;
-  padding: 12px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   border-radius: 8px;
   background: var(--color-bg-subtle);
 }
 
-.metric-list dd {
-  margin: 6px 0 0;
-  font-size: 0.95rem;
-  font-weight: 650;
+.metric-latency {
+  min-height: 76px;
+  padding: 16px 20px;
+  border: 1px solid var(--color-border);
+}
+
+.metric-latency dt {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.metric-latency dd {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 1.35rem;
+  font-weight: 750;
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.metric-speeds {
+  display: grid;
+  gap: 8px;
+}
+
+.metric-speed {
+  min-height: 48px;
+  padding: 10px 16px;
+}
+
+.metric-speed dt {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.metric-speed dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.speed-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .speed-chart {
   --speed-down: var(--color-accent);
   --speed-up: color-mix(in srgb, var(--color-accent) 30%, #c4a06a);
-  margin-top: 14px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
   display: grid;
   gap: 6px;
+}
+
+.speed-chart-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.speed-chart h3 {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.speed-chart-value {
+  min-width: 0;
+  color: var(--color-text-strong);
+  font-size: 1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .speed-chart canvas {
@@ -457,17 +534,23 @@
   background: var(--color-note-bg);
 }
 
-.footer p {
-  margin: 4px 0 0;
+.footer-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-left: 20px;
   color: var(--color-text-muted);
   font-size: 0.8rem;
   line-height: 1.55;
 }
 
+.footer-list strong {
+  color: var(--color-text-strong);
+}
+
 .tools-footer {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @container page (max-width: 800px) {
@@ -481,7 +564,6 @@
   }
 
   .ip-card,
-  .speed-card,
   .client-card {
     grid-column: 1;
   }

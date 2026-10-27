@@ -7,6 +7,11 @@ const STUN_SERVERS = [
     url: "stun:stun.miwifi.com:3478",
   },
   {
+    id: "tencent",
+    host: "stun.qq.com",
+    url: "stun:stun.qq.com:3478",
+  },
+  {
     id: "cloudflare",
     host: "stun.cloudflare.com",
     url: "stun:stun.cloudflare.com:3478",
@@ -15,11 +20,6 @@ const STUN_SERVERS = [
     id: "google",
     host: "stun.l.google.com",
     url: "stun:stun.l.google.com:19302",
-  },
-  {
-    id: "nextcloud",
-    host: "stun.nextcloud.com",
-    url: "stun:stun.nextcloud.com:443",
   },
 ] as const;
 

@@ -1,5 +1,5 @@
 import { el } from "./dom";
-import { createSpeedChart, type SpeedPhase } from "./speedchart";
+import { createSpeedChart } from "./speedchart";
 import { fetchWithTimeout, pauseBackgroundNetworkTasks } from "./network";
 
 const LATENCY_TARGETS = [
@@ -23,30 +23,15 @@ const DOWNLOAD_SOURCES = [
 ];
 
 const UPLOAD_URL = "https://speed.cloudflare.com/__up";
-const UPLOAD_STREAMS = 4;
+const DOWNLOAD_STREAMS_PER_SOURCE = 2;
+const UPLOAD_STREAMS = 8;
 
 const PING_MS = 1_000;
 const PING_SAMPLES = 5;
-const DOWN_MS = 8_000;
-const UP_MS = 8_000;
+const DOWN_MS = 10_000;
+const UP_MS = 6_000;
+const CONNECT_TIMEOUT_MS = 10_000;
 const UPLOAD_CHUNK = 8 * 1024 * 1024;
-
-const abortableWait = (ms: number, external: AbortSignal): Promise<void> =>
-  new Promise((resolve, reject) => {
-    if (external.aborted) {
-      reject(external.reason);
-      return;
-    }
-    const onAbort = (): void => {
-      window.clearTimeout(timer);
-      reject(external.reason);
-    };
-    const timer = window.setTimeout(() => {
-      external.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    external.addEventListener("abort", onAbort, { once: true });
-  });
 
 const withExternal = (
   signal: AbortSignal,
@@ -64,13 +49,13 @@ const announce = (message: string): void => {
 };
 
 let activeRun: AbortController | null = null;
-let activeChart: ReturnType<typeof createSpeedChart> | null = null;
+let activeCharts: ReturnType<typeof createSpeedChart>[] = [];
 
 export const cancelActiveSpeedtest = (): void => {
   activeRun?.abort();
   activeRun = null;
-  activeChart?.destroy();
-  activeChart = null;
+  activeCharts.forEach((chart) => chart.destroy());
+  activeCharts = [];
 };
 
 const mbps = (bytes: number, elapsedMs: number): string => {
@@ -83,22 +68,25 @@ const liveSpeed = (
   element: HTMLElement,
   bytes: () => number,
   started: number,
-  phase: SpeedPhase,
   chart: ReturnType<typeof createSpeedChart>,
+  chartBytes: () => number = bytes,
 ): number => {
-  let lastBytes = 0;
   let lastAt = started;
   return window.setInterval(() => {
     const now = performance.now();
     const elapsed = now - started;
     const total = bytes();
+    const transferred = chartBytes();
     const windowS = (now - lastAt) / 1000;
-    if (windowS > 0) {
-      chart.add(phase, ((total - lastBytes) * 8) / 1e6 / windowS);
+    if (windowS > 0 && elapsed > 0 && transferred > 0) {
+      chart.add(((transferred * 8) / 1e6 / elapsed) * 1000);
     }
-    lastBytes = total;
     lastAt = now;
-    if (elapsed > 200) element.textContent = mbps(total, elapsed);
+    if (total === 0) {
+      element.textContent = "Warming up...";
+    } else {
+      element.textContent = mbps(total, elapsed);
+    }
   }, 150);
 };
 
@@ -175,10 +163,25 @@ const testDownload = async (
   element.textContent = "Connecting...";
   announce("Testing download speed");
   const controller = new AbortController();
-  const started = performance.now();
+  let started = 0;
   let totalBytes = 0;
-  const timer = liveSpeed(element, () => totalBytes, started, "down", chart);
-  const stop = window.setTimeout(() => controller.abort(), DOWN_MS);
+  let timer: number | undefined;
+  let connectTimeout: number | undefined;
+  let measurementTimeout: number | undefined;
+
+  const beginMeasurement = (): void => {
+    if (started) return;
+    started = performance.now();
+    chart.start();
+    timer = liveSpeed(element, () => totalBytes, started, chart);
+    if (connectTimeout !== undefined) window.clearTimeout(connectTimeout);
+    measurementTimeout = window.setTimeout(() => controller.abort(), DOWN_MS);
+  };
+
+  connectTimeout = window.setTimeout(
+    () => controller.abort(),
+    CONNECT_TIMEOUT_MS,
+  );
 
   const pull = async (source: string): Promise<void> => {
     const signal = withExternal(controller.signal, external);
@@ -196,30 +199,38 @@ const testDownload = async (
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        totalBytes += value?.byteLength ?? 0;
+        const received = value?.byteLength ?? 0;
+        if (received > 0) beginMeasurement();
+        totalBytes += received;
       }
     }
   };
 
   try {
-    // Hold the test open for the whole window even if every source finishes
-    // early; controller.abort() is the real cutoff. Leaving the page aborts
-    // the whole window via `external`.
-    await Promise.all([
-      Promise.allSettled(DOWNLOAD_SOURCES.map(pull)),
-      abortableWait(DOWN_MS, external),
-    ]);
+    await Promise.allSettled(
+      DOWNLOAD_SOURCES.flatMap((source) =>
+        Array.from({ length: DOWNLOAD_STREAMS_PER_SOURCE }, () => pull(source)),
+      ),
+    );
+    if (!started) {
+      element.textContent = "Failed";
+      announce("Download test failed to connect");
+      return;
+    }
   } catch (error) {
     if (!isAbort(error)) throw error;
   } finally {
     controller.abort();
-    clearTimeout(stop);
-    clearInterval(timer);
-    element.textContent = mbps(
-      totalBytes,
-      Math.min(DOWN_MS, performance.now() - started),
-    );
-    announce(`Download ${element.textContent}`);
+    if (connectTimeout !== undefined) clearTimeout(connectTimeout);
+    if (measurementTimeout !== undefined) clearTimeout(measurementTimeout);
+    if (timer !== undefined) clearInterval(timer);
+    if (started) {
+      element.textContent = mbps(
+        totalBytes,
+        Math.min(DOWN_MS, performance.now() - started),
+      );
+      announce(`Download ${element.textContent}`);
+    }
   }
 };
 
@@ -231,11 +242,26 @@ const testUpload = async (
   element.textContent = "Connecting...";
   announce("Testing upload speed");
   const controller = new AbortController();
-  const started = performance.now();
+  let started = 0;
   let totalBytes = 0;
   const chunk = new Uint8Array(UPLOAD_CHUNK);
-  const timer = liveSpeed(element, () => totalBytes, started, "up", chart);
-  const stop = window.setTimeout(() => controller.abort(), UP_MS);
+  let timer: number | undefined;
+  let connectTimeout: number | undefined;
+  let measurementTimeout: number | undefined;
+
+  const beginMeasurement = (): void => {
+    if (started) return;
+    started = performance.now();
+    chart.start();
+    timer = liveSpeed(element, () => totalBytes, started, chart);
+    if (connectTimeout !== undefined) window.clearTimeout(connectTimeout);
+    measurementTimeout = window.setTimeout(() => controller.abort(), UP_MS);
+  };
+
+  connectTimeout = window.setTimeout(
+    () => controller.abort(),
+    CONNECT_TIMEOUT_MS,
+  );
 
   const uploadOnce = (signal: AbortSignal): Promise<boolean> =>
     new Promise((resolve) => {
@@ -249,7 +275,9 @@ const testUpload = async (
       let settled = false;
       const record = (event: ProgressEvent): void => {
         const loaded = Math.min(event.loaded, chunk.byteLength);
-        totalBytes += Math.max(0, loaded - counted);
+        const delta = Math.max(0, loaded - counted);
+        if (delta > 0) beginMeasurement();
+        totalBytes += delta;
         counted = loaded;
       };
       const finish = (success: boolean): void => {
@@ -281,22 +309,28 @@ const testUpload = async (
   };
 
   try {
-    // Same as the download phase: wait the whole window, abort at the end.
-    await Promise.all([
-      Promise.allSettled(Array.from({ length: UPLOAD_STREAMS }, () => push())),
-      abortableWait(UP_MS, external),
-    ]);
+    await Promise.allSettled(
+      Array.from({ length: UPLOAD_STREAMS }, () => push()),
+    );
+    if (!started) {
+      element.textContent = "Failed";
+      announce("Upload test failed to connect");
+      return;
+    }
   } catch (error) {
     if (!isAbort(error)) throw error;
   } finally {
     controller.abort();
-    clearTimeout(stop);
-    clearInterval(timer);
-    element.textContent = mbps(
-      totalBytes,
-      Math.min(UP_MS, performance.now() - started),
-    );
-    announce(`Upload ${element.textContent}. Speed test complete`);
+    if (connectTimeout !== undefined) clearTimeout(connectTimeout);
+    if (measurementTimeout !== undefined) clearTimeout(measurementTimeout);
+    if (timer !== undefined) clearInterval(timer);
+    if (started) {
+      element.textContent = mbps(
+        totalBytes,
+        Math.min(UP_MS, performance.now() - started),
+      );
+      announce(`Upload ${element.textContent}. Speed test complete`);
+    }
   }
 };
 
@@ -305,13 +339,28 @@ export const initSpeed = (): void => {
   const latency = el("latency");
   const download = el("download-speed");
   const upload = el("upload-speed");
-  const canvas = el<HTMLCanvasElement>("speed-chart");
-  if (!button || !latency || !download || !upload || !canvas) return;
+  const downloadCanvas = el<HTMLCanvasElement>("download-chart");
+  const uploadCanvas = el<HTMLCanvasElement>("upload-chart");
+  if (
+    !button ||
+    !latency ||
+    !download ||
+    !upload ||
+    !downloadCanvas ||
+    !uploadCanvas
+  )
+    return;
   if (button.dataset.bound === "true") return;
   button.dataset.bound = "true";
 
-  const chart = createSpeedChart(canvas);
-  activeChart = chart;
+  const downloadChart = createSpeedChart(
+    downloadCanvas,
+    "down",
+    DOWN_MS / 1000,
+    4,
+  );
+  const uploadChart = createSpeedChart(uploadCanvas, "up", UP_MS / 1000, 3);
+  activeCharts = [downloadChart, uploadChart];
 
   button.addEventListener("click", async () => {
     if (button.disabled) return;
@@ -322,9 +371,8 @@ export const initSpeed = (): void => {
     try {
       const reachable = await testPing(latency, run.signal);
       if (!reachable) return;
-      chart.start();
-      await testDownload(download, chart, run.signal);
-      await testUpload(upload, chart, run.signal);
+      await testDownload(download, downloadChart, run.signal);
+      await testUpload(upload, uploadChart, run.signal);
     } catch (error) {
       if (!isAbort(error)) console.error("Speedtest failed:", error);
     } finally {

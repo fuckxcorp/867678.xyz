@@ -67,35 +67,28 @@ const loadIpip = async (): Promise<void> => {
   }
 };
 
-const loadIp138 = async (): Promise<void> => {
+const loadMyIpCn = async (): Promise<void> => {
   try {
     const response = await fetchWithTimeout(
-      "https://2026.ip138.com/",
+      "https://my.ip.cn/",
       { cache: "no-store" },
       undefined,
       true,
     );
     if (!response.ok) throw new Error(String(response.status));
-
-    const document = new DOMParser().parseFromString(
-      await response.text(),
-      "text/html",
+    const text = await response.text();
+    const match = text.match(
+      /ip\s*[：:]\s*(\d{1,3}(?:\.\d{1,3}){3}|[\da-f:]+)\s+归属地\s*[：:]\s*(.+)/i,
     );
-    const content =
-      document.body.textContent?.replace(/\s+/g, " ").trim() ?? "";
-    const ip = content.match(
-      /您的\s*IP地址是：\s*[\[【]?(\d{1,3}(?:\.\d{1,3}){3}|[\da-f:]+)/i,
-    )?.[1];
-    const location = content.match(
-      /来自：\s*(.+?)(?=\s*ip查询api接口|\s*安卓SDK|$)/i,
-    )?.[1];
-    if (!ip) throw new Error("Unexpected ip138.com response");
+    const ip = match?.[1];
+    const location = match?.[2]?.trim();
+    if (!ip) throw new Error("Unexpected my.ip.cn response");
 
-    setText("ip138-ip", ip);
-    setText("ip138-location", location || "Unavailable");
+    setText("myip-ip", ip);
+    setText("myip-location", location || "Unavailable");
   } catch {
-    setText("ip138-ip", "Unavailable");
-    setText("ip138-location", "Unavailable");
+    setText("myip-ip", "Unavailable");
+    setText("myip-location", "Unavailable");
   }
 };
 
@@ -139,7 +132,7 @@ export const initIp = async (): Promise<void> => {
       asname: "ipinfo-asname6",
     }).then(applyLocation),
     loadIpip(),
-    loadIp138(),
+    loadMyIpCn(),
     loadPreferredIp(),
   ]);
 };

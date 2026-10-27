@@ -16,7 +16,7 @@ async function load(url: string): Promise<string> {
     const startedAt = Date.now();
     try {
       const response = await fetch(url, {
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(5_000),
       });
 
       if (!response.ok) {
