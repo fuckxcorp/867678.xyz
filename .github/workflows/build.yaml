@@ -13,9 +13,6 @@ jobs:
       - name: Just build, Don't worry
         uses: moaeiou/moaeiou/actions/buildnode@main
         with:
-          command: |
-            pnpm install
-            pnpm build
           wrangler: "yes"
           wrangler-apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wrangler-command: pages deploy dist --project-name 867678
