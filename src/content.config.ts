@@ -85,7 +85,7 @@ const PROJECTS: RemoteEntry[] = [
   },
 ];
 
-const docs: RemoteEntry[] = [
+const DOCS: RemoteEntry[] = [
   {
     id: "mirrors",
     title: "Resources mirrors",
@@ -95,6 +95,11 @@ const docs: RemoteEntry[] = [
     id: "openwrt",
     title: "Anything about OpenWrt",
     url: "https://raw.githubusercontent.com/moaeiou/moaeiou/refs/heads/main/docs/openwrt.md",
+  },
+  {
+    id: "fuckxter",
+    title: "FuckXter",
+    url: "https://raw.githubusercontent.com/fuckxcorp/fuckxter/refs/heads/main/docs/README.md",
   },
   {
     id: "mopl",
@@ -128,7 +133,7 @@ const entrySchema = z.object({ title: z.string() });
 
 export const collections = {
   docs: defineCollection({
-    loader: mdLoader(docs),
+    loader: mdLoader(DOCS),
     schema: entrySchema,
   }),
   projects: defineCollection({
