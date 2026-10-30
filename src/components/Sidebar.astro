@@ -39,8 +39,11 @@ const sections: { id: string; label: string; links: NavItem[] }[] = [
     label: "Make LuCI Great Again",
     links: [
       { href: "/projects/luci-app-oplist", label: "OpenList" },
-      { href: "/projects/luci-app-rsop", label: "Rustdesk for OpenWrt" },
       { href: "/projects/luci-app-pm", label: "PowerManager" },
+      {
+        label: "Archived",
+        children: [{ href: "/projects/luci-app-rsop", label: "Rustdesk for OpenWrt" }],
+      },
     ],
   },
   {
