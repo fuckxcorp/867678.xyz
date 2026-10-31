@@ -58,21 +58,26 @@ const PROJECTS: RemoteEntry[] = [
     title: "LuCI-APP-Rustdesk for OpenWrt",
     url: "https://raw.githubusercontent.com/morouter/luci-app-rsop/refs/heads/main/README.md",
   },
-  {
-    id: "0fi",
-    title: "FancyIndex-Theme",
-    url: "https://raw.githubusercontent.com/moaeiou/0Fi/refs/heads/main/README.md",
-  },
-  {
-    id: "contento24",
-    title: "Contento24",
-    url: "https://raw.githubusercontent.com/contento24/contento24/refs/heads/main/README.md",
-  },
+{
+  id: "openuuyc-linux",
+  title: "OpenUUYC-Linux",
+  url: "https://github.com/moaeiou/openuuyc-linux/raw/refs/heads/main/README.md",
+},
   {
     id: "mineradio",
     title: "Mineradio",
     url: "https://raw.githubusercontent.com/moaeiou/mineradio/refs/heads/main/README.md",
   },
+{
+  id: "contento24",
+  title: "Contento24",
+  url: "https://raw.githubusercontent.com/contento24/contento24/refs/heads/main/README.md",
+},
+{
+  id: "0fi",
+  title: "FancyIndex-Theme",
+  url: "https://raw.githubusercontent.com/moaeiou/0Fi/refs/heads/main/README.md",
+},
   {
     id: "go-rustdesk-server",
     title: "Go Rustdesk Server",
