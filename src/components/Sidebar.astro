@@ -16,9 +16,7 @@ const sections: { id: string; label: string; links: NavItem[] }[] = [
   {
     id: "web-tools",
     label: "Web Tools",
-    links: [
-      { href: "/tools/moitools", label: "MoITools" },
-    ],
+    links: [{ href: "/tools/moitools", label: "MoITools" }],
   },
   {
     id: "orgmio",
@@ -42,7 +40,9 @@ const sections: { id: string; label: string; links: NavItem[] }[] = [
       { href: "/projects/luci-app-pm", label: "PowerManager" },
       {
         label: "Archived",
-        children: [{ href: "/projects/luci-app-rsop", label: "Rustdesk for OpenWrt" }],
+        children: [
+          { href: "/projects/luci-app-rsop", label: "Rustdesk for OpenWrt" },
+        ],
       },
     ],
   },
