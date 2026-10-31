@@ -49,14 +49,14 @@ const PROJECTS: RemoteEntry[] = [
     url: "https://raw.githubusercontent.com/morouter/luci-app-oplist/refs/heads/main/README.md",
   },
   {
-    id: "luci-app-rsop",
-    title: "LuCI-APP-Rustdesk for OpenWrt",
-    url: "https://raw.githubusercontent.com/morouter/luci-app-rsop/refs/heads/main/README.md",
-  },
-  {
     id: "luci-app-pm",
     title: "LuCI-APP-PowerManager",
     url: "https://raw.githubusercontent.com/morouter/luci-app-pm/refs/heads/main/README.md",
+  },
+  {
+    id: "luci-app-rsop",
+    title: "LuCI-APP-Rustdesk for OpenWrt",
+    url: "https://raw.githubusercontent.com/morouter/luci-app-rsop/refs/heads/main/README.md",
   },
   {
     id: "0fi",
