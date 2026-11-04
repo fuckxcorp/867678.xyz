@@ -1,0 +1,194 @@
+---
+import "../styles/components/sidebar.css";
+
+const pathname = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === "/" ? pathname === href : pathname.startsWith(href);
+
+type NavLink = { href: string; label: string };
+type NavItem = NavLink | { label: string; children: NavLink[] };
+
+const isGroup = (
+  item: NavItem,
+): item is { label: string; children: NavLink[] } => "children" in item;
+
+const sections: { id: string; label: string; links: NavItem[] }[] = [
+  {
+    id: "web-tools",
+    label: "Web Tools",
+    links: [{ href: "/tools/moitools", label: "MoITools" }],
+  },
+  {
+    id: "orgmio",
+    label: "MIO Family",
+    links: [
+      { href: "/projects/mio", label: "MIO" },
+      { href: "/projects/mcry", label: "MCRY" },
+      { href: "/projects/qcsh", label: "QUICShell" },
+      { href: "/projects/cv", label: "CV" },
+      {
+        label: "Archived",
+        children: [{ href: "/projects/omio", label: "OLD MIO" }],
+      },
+    ],
+  },
+  {
+    id: "mlga",
+    label: "Make LuCI Great Again",
+    links: [
+      { href: "/projects/luci-app-oplist", label: "OpenList" },
+      { href: "/projects/luci-app-pm", label: "PowerManager" },
+      {
+        label: "Archived",
+        children: [
+          { href: "/projects/luci-app-rsop", label: "Rustdesk for OpenWrt" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "softwares",
+    label: "Softwares",
+    links: [
+      { href: "/projects/openuuyc-linux", label: "OpenUUYC-Linux" },
+      {
+        label: "Archived",
+        children: [
+          { href: "/projects/0fi", label: "0Fi" },
+          { href: "/projects/mineradio", label: "Mineradio" },
+          { href: "/projects/contento24", label: "Contento24" },
+          { href: "/projects/go-rustdesk-server", label: "Go Rustdesk Server" },
+          { href: "/projects/xavatarwall", label: "X(Twitter) Avatar Wall" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    links: [
+      { href: "/docs/openwrt", label: "OpenWrt" },
+      { href: "/docs/mirrors", label: "Mirror" },
+      { href: "/docs/fuckxter", label: "FuckXter" },
+      { href: "/docs/mopl", label: "Mo Public License" },
+    ],
+  },
+];
+---
+
+<div class="nav-shell" transition:persist="site-nav">
+  <button
+    class="nav-trigger"
+    type="button"
+    aria-label="Open navigation"
+    aria-controls="site-navigation"
+    aria-expanded="false"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <line x1="4" y1="7" x2="20" y2="7"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="17" x2="20" y2="17"></line>
+    </svg>
+  </button>
+
+  <aside class="sidebar" id="site-navigation" aria-label="Site navigation">
+    <div class="sidebar-header">
+      <a class="brand" href="/" aria-label="Home">
+        <img src="/favicon.svg" alt="Logo" />
+        <span>Mo AEIOU</span>
+      </a>
+      <div class="sidebar-actions">
+        <button
+          class="nav-close"
+          type="button"
+          aria-label="Close navigation"
+          data-nav-close
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-content">
+      <button
+        class="nav-item theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="Switch between auto, light and dark theme"
+      >
+        <span class="mode-auto">◐ Auto</span>
+        <span class="mode-light">☀ Light</span>
+        <span class="mode-dark">☾ Dark</span>
+      </button>
+
+      {sections.map((section) => (
+        <nav class="section" aria-labelledby={`nav-${section.id}`}>
+          <h2 class="section-label" id={`nav-${section.id}`}>
+            {section.label}
+          </h2>
+          <div class="nav-list">
+            {section.links.map((link) =>
+              isGroup(link) ? (
+                <details
+                  class="nav-group"
+                  open={link.children.some((child) => isActive(child.href))}
+                >
+                  <summary class="nav-item">{link.label}</summary>
+                  <div class="nav-sublist">
+                    {link.children.map((child) => (
+                      <a
+                        href={child.href}
+                        class:list={[
+                          "nav-item",
+                          { active: isActive(child.href) },
+                        ]}
+                        aria-current={isActive(child.href) ? "page" : undefined}
+                      >
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              ) : (
+                <a
+                  href={link.href}
+                  class:list={["nav-item", { active: isActive(link.href) }]}
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                >
+                  {link.label}
+                </a>
+              ),
+            )}
+          </div>
+        </nav>
+      ))}
+    </div>
+
+    <p class="sidebar-footer">&copy; 2026 MoAEIOU</p>
+  </aside>
+</div>
+
+<script>
+  import "../lib/sidebar.ts";
+</script>

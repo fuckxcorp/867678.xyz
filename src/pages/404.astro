@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/404.css";
+---
+
+<BaseLayout title="404">
+  <div class="not-found-page">
+    <main class="not-found-card">
+      <div class="error-code" aria-hidden="true">
+        404
+      </div>
+      <div class="error-content">
+        <h1>Not Found</h1>
+        <p class="darien" lang="es">
+          Lo siento, has llegado al Tapón del Darién.
+        </p>
+        <p class="description">
+          Es posible que la página se haya trasladado o que el enlace sea
+          incorrecto.
+        </p>
+        <div class="error-actions">
+          <a class="primary-action" href="/">
+            Back to homepage
+          </a>
+          <button class="secondary-action" type="button" data-go-back>
+            Return
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</BaseLayout>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    document.querySelector("[data-go-back]")?.addEventListener("click", () => {
+      if (history.length > 1) history.back();
+      else location.href = "/";
+    });
+  });
+</script>

@@ -1,17 +1,29 @@
 {
-  "name": "867678-xyz",
+  "name": "867678.xyz",
   "type": "module",
-  "version": "0.0.1",
+  "version": "6.0.8",
   "engines": {
-    "node": ">=22.23.4"
+    "node": ">=26.13.0"
   },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "format": "prettier . --write",
+    "check": "astro check && prettier . --check"
   },
   "dependencies": {
-    "astro": "^7.4.5"
-  }
+    "astro": "7.4.5",
+    "github-markdown-css": "^5.9.0",
+    "http-cache-semantics": "4.3.0",
+    "modern-normalize": "^3.0.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "prettier": "3.9.10",
+    "prettier-plugin-astro": "1.1.2",
+    "wrangler": "4.157.0"
+  },
+  "packageManager": "pnpm@12.17.0+sha512.b8d223ebec04b580a89ed206daa71d1bccb6a1ee1d52efa95cc3b0db75271561df8f0d8e2c43add39c5ec08018af7a8a95108e7090f95a29f88727b7a40fd53d"
 }

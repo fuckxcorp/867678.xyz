@@ -1,0 +1,19 @@
+---
+import MarkdownPage from "../../components/MarkdownPage.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs");
+  return docs.map((docs) => ({
+    params: { id: docs.id },
+    props: { docs },
+  }));
+}
+
+const { docs } = Astro.props;
+const { Content, headings } = await render(docs);
+---
+
+<MarkdownPage title={docs.data.title} headings={headings}>
+  <Content />
+</MarkdownPage>

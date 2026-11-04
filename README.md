@@ -1,43 +1,37 @@
-# Astro Starter Kit: Minimal
+# 867678.xyz
 
-```sh
-pnpm create astro@latest -- --template minimal
+Source code of 867678.xyz, MoITools.
+
+## 🚀 How to init
+
+Example using ArchLinux
+
+```bash
+sudo pacman -Syyuu --needed corepack nodejs
+corepack use pnpm@latest
+git clone git@github.com:moaeiou/867678.xyz.git
+# or try https://github.com/moaeiou/867678.xyz.git
+cd 867678.xyz
+pnpm install
 ```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
 
 ## 🧞 Commands
 
 All commands are run from the root of the project, from a terminal:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+| Command                                      | Action                                               |
+| :------------------------------------------- | :--------------------------------------------------- |
+| `pnpm install`                               | Installs dependencies                                |
+| `pnpm dev`                                   | Starts local dev server at `localhost:4321`          |
+| `pnpm build`                                 | Build your production site to `./dist/`              |
+| `pnpm astro ...`                             | Run CLI commands like `astro add`, `astro check`     |
+| `pnpm astro -- --help`                       | Get help using the Astro CLI                         |
+| `pnpm astro preferences *action* devToolbar` | enable or disable devToolbar                         |
+| `pnpm format`                                | Format files with Prettier                           |
+| `pnpm check`                                 | Run `astro check` and check formatting with Prettier |
 
-## 👀 Want to learn more?
+## ⚖️ LICENSE
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+This website and the MoITools and CyAks projects are licensed under the [MoPL](https://867678.xyz/docs/mopl)
+
+Included depends use theme license.

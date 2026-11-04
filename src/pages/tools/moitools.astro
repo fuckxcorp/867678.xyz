@@ -1,0 +1,278 @@
+---
+//css
+import "../../styles/tools/moitools.css";
+//components
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="MoITools">
+  <div class="tools-page">
+    <header class="tools-header">
+      <p class="eyebrow">Mo Internet Test Tools</p>
+      <h1>MoITools</h1>
+      <p class="tools-summary">A general-purpose network diagnostic tool.</p>
+    </header>
+
+    <section class="tools-grid" aria-label="Network diagnostics">
+      <article class="tool-card ip-card">
+        <div class="card-heading">
+          <p class="card-kicker">Connection</p>
+          <h2>IP information</h2>
+        </div>
+        <div class="ip-sources" aria-live="polite">
+          <section class="ip-source ipinfo-source">
+            <h3>ipinfo.io</h3>
+            <dl class="ipinfo-grid">
+              <div>
+                <dt>IPv4</dt>
+                <dd id="ipinfo-v4">Getting data...</dd>
+                <dt>ASN</dt>
+                <dd id="ipinfo-asn4">Getting data...</dd>
+                <dt>AS Name</dt>
+                <dd id="ipinfo-asname4">Getting data...</dd>
+              </div>
+              <div>
+                <dt>IPv6</dt>
+                <dd id="ipinfo-v6">Getting data...</dd>
+                <dt>ASN</dt>
+                <dd id="ipinfo-asn6">Getting data...</dd>
+                <dt>AS Name</dt>
+                <dd id="ipinfo-asname6">Getting data...</dd>
+              </div>
+              <div class="ip-location">
+                <dt>Location</dt>
+                <dd id="ipinfo-location">Getting data...</dd>
+              </div>
+              <div class="ip-preferred">
+                <dt>Preferred</dt>
+                <dd id="ipinfo-preferred">Getting data...</dd>
+              </div>
+            </dl>
+          </section>
+          <div class="ip-secondary">
+            <section class="ip-source">
+              <h3>ipip.net</h3>
+              <dl>
+                <div>
+                  <dt>IP</dt>
+                  <dd id="ipip-ip">Getting data...</dd>
+                </div>
+                <div>
+                  <dt>Location</dt>
+                  <dd id="ipip-location">Getting data...</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="ip-source">
+              <h3>IP.CN</h3>
+              <dl>
+                <div>
+                  <dt>IP</dt>
+                  <dd id="myip-ip">Getting data...</dd>
+                </div>
+                <div>
+                  <dt>Location</dt>
+                  <dd id="myip-location">Getting data...</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="tool-card client-card">
+        <div class="card-heading">
+          <p class="card-kicker">Browser</p>
+          <h2>Client information</h2>
+        </div>
+        <dl class="detail-list">
+          <div class="detail-wide">
+            <dt>User Agent</dt>
+            <dd id="user-agent">Getting data...</dd>
+          </div>
+          <div>
+            <dt>Language</dt>
+            <dd id="language">Getting data...</dd>
+          </div>
+          <div>
+            <dt>Timezone</dt>
+            <dd id="timezone">Getting data...</dd>
+          </div>
+          <div>
+            <dt>HTTP/3</dt>
+            <dd id="h3">Getting data...</dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="leak-section" aria-labelledby="privacy-tests-title">
+      <div class="section-heading">
+        <p class="card-kicker">Privacy</p>
+        <h2 id="privacy-tests-title">Leak tests</h2>
+      </div>
+      <div class="leak-grid">
+        <div class="leak-item webrtc-item">
+          <h3>WebRTC</h3>
+          <div class="stun-grid" id="webrtc-results" aria-live="polite">
+            <section class="stun-row" id="stun-miwifi" data-state="wait">
+              <h4>stun.miwifi.com</h4>
+              <dl>
+                <div>
+                  <dt>Status</dt>
+                  <dd id="stun-miwifi-status">Testing...</dd>
+                </div>
+                <div>
+                  <dt>Host</dt>
+                  <dd id="stun-miwifi-host">—</dd>
+                </div>
+                <div>
+                  <dt>Result</dt>
+                  <dd id="stun-miwifi-srflx">—</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="stun-row" id="stun-tencent" data-state="wait">
+              <h4>stun.qq.com</h4>
+              <dl>
+                <div>
+                  <dt>Status</dt>
+                  <dd id="stun-tencent-status">Testing...</dd>
+                </div>
+                <div>
+                  <dt>Host</dt>
+                  <dd id="stun-tencent-host">—</dd>
+                </div>
+                <div>
+                  <dt>Result</dt>
+                  <dd id="stun-tencent-srflx">—</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="stun-row" id="stun-cloudflare" data-state="wait">
+              <h4>stun.cloudflare.com</h4>
+              <dl>
+                <div>
+                  <dt>Status</dt>
+                  <dd id="stun-cloudflare-status">Testing...</dd>
+                </div>
+                <div>
+                  <dt>Host</dt>
+                  <dd id="stun-cloudflare-host">—</dd>
+                </div>
+                <div>
+                  <dt>Result</dt>
+                  <dd id="stun-cloudflare-srflx">—</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="stun-row" id="stun-google" data-state="wait">
+              <h4>stun.l.google.com:19302</h4>
+              <dl>
+                <div>
+                  <dt>Status</dt>
+                  <dd id="stun-google-status">Testing...</dd>
+                </div>
+                <div>
+                  <dt>Host</dt>
+                  <dd id="stun-google-host">—</dd>
+                </div>
+                <div>
+                  <dt>Result</dt>
+                  <dd id="stun-google-srflx">—</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        </div>
+        <div class="leak-item dns-item">
+          <h3>DNS</h3>
+          <div
+            id="dns-results"
+            class="dns-results"
+            data-state="wait"
+            aria-live="polite"
+          >
+            <ul id="dns-resolvers" class="dns-resolvers">
+              <li class="dns-empty">Testing...</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <article class="tool-card speed-card">
+      <div class="card-heading">
+        <p class="card-kicker">Performance</p>
+        <h2>Internet speedtest</h2>
+      </div>
+      <dl class="metric-list">
+        <div class="metric-latency">
+          <dt>Latency</dt>
+          <dd id="latency">Not started</dd>
+        </div>
+      </dl>
+      <p id="speed-status" class="sr-only" aria-live="polite"></p>
+      <div class="speed-charts">
+        <section class="speed-chart">
+          <div class="speed-chart-heading">
+            <h3>Download speed</h3>
+            <output id="download-speed" class="speed-chart-value">
+              Not started
+            </output>
+          </div>
+          <canvas
+            id="download-chart"
+            aria-label="Download speed over time"
+          ></canvas>
+        </section>
+        <section class="speed-chart">
+          <div class="speed-chart-heading">
+            <h3>Upload speed</h3>
+            <output id="upload-speed" class="speed-chart-value">
+              Not started
+            </output>
+          </div>
+          <canvas
+            id="upload-chart"
+            aria-label="Upload speed over time"
+          ></canvas>
+        </section>
+      </div>
+      <div class="speed-actions">
+        <button id="run-speedtest" type="button">
+          Run speedtest
+        </button>
+        <p class="card-note">
+          The download lasts 10 seconds and the upload lasts 6 seconds.
+        </p>
+      </div>
+    </article>
+
+    <div class="tools-footer">
+      <aside class="footer">
+        <h2>Notes</h2>
+        <ul class="footer-list">
+          <li>
+            <strong>We do not collect your data</strong> MoITools is an open
+            source project, so we do not save any results. However, we depend on
+            service providers that may save your results; please check their
+            privacy policies.
+          </li>
+          <li>
+            <strong>Please note</strong> This project is free, but your data
+            usage may incur charges.
+          </li>
+          <li>
+            <strong>No promises</strong> Test results do not constitute any form
+            of guarantee and are provided for reference only.
+          </li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import "../../lib/moitools/index";
+</script>

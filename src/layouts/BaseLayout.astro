@@ -1,0 +1,79 @@
+---
+import "modern-normalize/modern-normalize.css";
+import "../styles/global.css";
+import "../styles/pages.css";
+import Sidebar from "../components/Sidebar.astro";
+import ThemeScript from "../components/ThemeScript.astro";
+import { ClientRouter } from "astro:transitions";
+import { buildTime, version } from "../lib/version";
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Home" } = Astro.props;
+---
+
+<html lang="en" data-theme="light" transition:animate="none">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | MoAEIOU</title>
+    <ClientRouter />
+    <ThemeScript pageEnter />
+    <script is:inline define:vars={{ version, buildTime }}>
+      console.info(`V${version} ${buildTime}`);
+    </script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <Sidebar />
+      <main class="pages-wrapper">
+        <section class="page-entry">
+          <div class="content-viewport">
+            <slot />
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      const copyIcon =
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>';
+      const doneIcon =
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>';
+
+      const mountCopyButtons = () => {
+        for (const pre of document.querySelectorAll<HTMLPreElement>(
+          "pre.astro-code",
+        )) {
+          if (pre.querySelector(".code-copy")) continue;
+          const button = document.createElement("button");
+          button.className = "code-copy";
+          button.type = "button";
+          button.setAttribute("aria-label", "Copy code");
+          button.addEventListener("click", async () => {
+            const code = pre.querySelector("code");
+            const text = code?.innerText ?? pre.innerText ?? "";
+            try {
+              await navigator.clipboard.writeText(text);
+            } catch {
+              return;
+            }
+            button.setAttribute("aria-label", "Copied");
+            button.innerHTML = doneIcon;
+            setTimeout(() => {
+              button.setAttribute("aria-label", "Copy code");
+              button.innerHTML = copyIcon;
+            }, 1500);
+          });
+          button.innerHTML = copyIcon;
+          pre.appendChild(button);
+        }
+      };
+
+      document.addEventListener("astro:page-load", mountCopyButtons);
+    </script>
+  </body>
+</html>

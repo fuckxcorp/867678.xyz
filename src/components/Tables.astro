@@ -1,0 +1,30 @@
+---
+import "../styles/components/toc.css";
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+---
+
+<nav class="toc" aria-label="Tables">
+  <p class="toc-title">Table of contents</p>
+  <ol class="toc-list">
+    {headings.map((heading) => (
+      <li class:list={["toc-item", `toc-depth-${heading.depth}`]}>
+        <a href={`#${heading.slug}`}>{heading.text}</a>
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<script>
+  import "../lib/tables";
+</script>
