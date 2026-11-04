@@ -1,0 +1,18 @@
+name: Can't keep up with you mind
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    name: I'm leaving on a roundabout
+    runs-on: ubuntu-latest
+    steps:
+      - name: Just build, Don't worry
+        uses: moaeiou/moaeiou/actions/buildnode@main
+        with:
+          wrangler: "yes"
+          wrangler-apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wrangler-command: pages deploy dist --project-name 867678
