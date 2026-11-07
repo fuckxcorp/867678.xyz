@@ -39,11 +39,6 @@ const PROJECTS: RemoteEntry[] = [
     url: "https://raw.githubusercontent.com/orgmio/cv/refs/heads/main/README.md",
   },
   {
-    id: "omio",
-    title: "older mio protocol",
-    url: "https://raw.githubusercontent.com/orgmio/mio/refs/heads/omio/README.md",
-  },
-  {
     id: "luci-app-oplist",
     title: "LuCI-APP-OpenList",
     url: "https://raw.githubusercontent.com/morouter/luci-app-oplist/refs/heads/main/README.md",
@@ -52,6 +47,11 @@ const PROJECTS: RemoteEntry[] = [
     id: "luci-app-pm",
     title: "LuCI-APP-PowerManager",
     url: "https://raw.githubusercontent.com/morouter/luci-app-pm/refs/heads/main/README.md",
+  },
+  {
+    id: "omio",
+    title: "older mio protocol",
+    url: "https://raw.githubusercontent.com/orgmio/omio/refs/heads/main/README.md",
   },
   {
     id: "luci-app-rsop",

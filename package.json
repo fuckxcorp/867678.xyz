@@ -1,9 +1,9 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "6.0.9",
+  "version": "6.1.0",
   "engines": {
-    "node": ">=26.13.0"
+    "node": ">=24.22.1"
   },
   "scripts": {
     "dev": "astro dev",
