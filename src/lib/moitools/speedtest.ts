@@ -18,7 +18,7 @@ const LATENCY_TARGETS = [
 const DOWNLOAD_SOURCES = [
   "https://speed.cloudflare.com/__down?bytes=9999999",
   "https://la.867678.xyz/speedtest",
-  "https://sg.867678.xyz/speedtest",
+  "https://au.867678.xyz/speedtest",
   "https://ki.867678.xyz/speedtest",
 ];
 
