@@ -1,7 +1,7 @@
 {
   "name": "867678.xyz",
   "type": "module",
-  "version": "6.1.2",
+  "version": "6.1.3",
   "engines": {
     "node": ">=24.22.1"
   },
@@ -14,7 +14,7 @@
     "check": "astro check && prettier . --check"
   },
   "dependencies": {
-    "astro": "7.4.8",
+    "astro": "7.4.10",
     "github-markdown-css": "^5.9.0",
     "http-cache-semantics": "4.3.0",
     "modern-normalize": "^3.0.1"
@@ -23,7 +23,7 @@
     "@astrojs/check": "^0.9.10",
     "prettier": "3.9.10",
     "prettier-plugin-astro": "1.1.2",
-    "wrangler": "4.159.0"
+    "wrangler": "~4.160.0"
   },
   "packageManager": "pnpm@12.19.0+sha512.87327b6619853205834e4be59ba3a231e303d9f5e435912ede3312b7539b79af890942f6513b05a4690745666888045c09b33fc420c2cd2d3bd95c01ba21dbeb"
 }
