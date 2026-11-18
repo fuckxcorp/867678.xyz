@@ -61,7 +61,7 @@ const PROJECTS: RemoteEntry[] = [
   {
     id: "openuuyc-linux",
     title: "OpenUUYC-Linux",
-    url: "https://github.com/moaeiou/openuuyc-linux/raw/refs/heads/main/README.md",
+    url: "https://raw.githubusercontent.com/moaeiou/openuuyc-linux/refs/heads/main/README.md",
   },
   {
     id: "mineradio",
